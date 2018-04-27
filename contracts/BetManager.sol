@@ -13,21 +13,24 @@ contract BetManager is Ownable {
 	}
 
 	function createBet(
-	  string _player1,
-	  string _player2,
-	  bool _drawAllowed,
-	  uint256 _matchStart,
-      uint256 _durationBetting) external onlyOwner returns (address){
-      	require(areValidPlayers(_player1, _player2));
+		string _p1,
+		string _p2,
+		bool _drawAllowed,
+		uint256 _matchStart,
+	    uint256 _durationBetting,
+	    uint256 _durationConfirmResult)
+		external onlyOwner returns (address)
+	{
+	    require(areValidPlayers(_p1, _p2));
       	require(_matchStart > now);
 
-      	address betContract = new Bet(_player1, _player2, _drawAllowed, _matchStart, _durationBetting);
+      	address betContract = new Bet(_p1, _p2, _drawAllowed, _matchStart, _durationBetting, _durationConfirmResult);
       	bets.push(betContract);
 
       	return betContract;
 	}
 
-	function areValidPlayers(string p1, string p2) view internal returns (bool){
+	function areValidPlayers(string p1, string p2) internal view returns (bool) {
 		return (players[p1] == true && players[p2] == true);
 	}
 

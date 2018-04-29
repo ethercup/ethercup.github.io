@@ -1,4 +1,5 @@
 var Bet = artifacts.require("Bet");
+//const assertThrow = require('./helpers');
 
 var getTimestampNow = () => {
   return Math.floor(Date.now()/1000)
@@ -10,8 +11,25 @@ var getBetWithBettingOpen = () => {
     "Russia",
     true,
     getTimestampNow()+3600,
-    100000
+    100000,
+    3600*24
   );
+}
+
+var assertThrow = async (fn, args) => {
+  try {
+    await fn.apply(null, args)
+    assert(false, 'the contract should throw here')
+  } catch (error) {
+    assert(
+      /invalid opcode/.test(error) || /revert/.test(error),
+      `the error message should be invalid opcode or revert, the error was ${error}`
+    )
+  }
+}
+
+const testBet = async (contract, playerBet, meta) => {
+    await contract.bet(playerBet, meta);
 }
 // use before/beforeEeach to improve unit tests
 
@@ -78,10 +96,13 @@ describe('When in BettingOpen phase', () => {
     it("should throw when not betted on player 1 or 2", async () => {
       const contract = await getBetWithBettingOpen()
 
-      await contract.bet(0, {from: sender, value: betAmount})
-      await contract.bet(3, {from: sender, value: betAmount})
+      // This syntax doesn't work when FAIL is expected
+      //await contract.bet(3, {from: sender, value: betAmount})
 
-      assert.error('should throw when bet on player 0 or 3')
+      await assertThrow(contract.bet, [0, {from: sender, value: betAmount}])
+      await assertThrow(contract.bet, [3, {from: sender, value: betAmount}])
     })
   })
 })
+
+

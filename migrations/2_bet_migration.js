@@ -2,11 +2,11 @@ var Bet = artifacts.require("./Bet.sol");
 
 module.exports = function(deployer) {
   deployer.deploy(Bet,
-  	"Germany",
-  	"Russia",
+  	'Germany',
+  	'Russia',
   	true,
   	1524515280,
   	100000,
   	3600*24,
-  	{from: '0xd78d516f932daa9d40ac0ba2fd26c82942d11f1a', value:1000000000000});
+  	{from: '0x680f01bdf21ca9c54a096e9e471ca7749a4d1588', value: 1000000000000});
 };

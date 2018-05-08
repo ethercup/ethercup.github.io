@@ -4,7 +4,6 @@ var getTimestampNow = () => {
   return Math.floor(Date.now()/1000)
 }
 
-// default test values to create Bet contracts
 const p1 = 'Germany'
 const p2 = 'Russia'
 const drawAllowed = true

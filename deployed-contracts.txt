@@ -1,0 +1,25 @@
+football-data.org API-KEY: fc4c47ededb3485198a3a92a3b546b0e
+
+first match Germany Russia: http://api.football-data.org/v1/fixtures/165069
+
+
+
+CURL-commands:
+--------------
+get all worldcup games:
+curl -H "X-Auth-Token: fc4c47ededb3485198a3a92a3b546b0e" http:rg/v1/competitions/467/fixtures
+
+KOVAN:
+------
+Migrations: 0x50df41a5aeafa1ac8dd7551b4ae803393ace6849
+BetManager: 0x559c9f45f2a41eb7455e81726e34d23a5ecc75d8
+Bet: 0x772a3c0287289426174edec227e4aa42a1aff539
+
+
+
+
+test match:
+-----------
+matchStart: 1525456800				// 05/04/2018 @ 6:00pm (UTC)
+durationBetting: 3600*6				// 6h
+durationSuggestConfirm: 3600*24*4	// 4d

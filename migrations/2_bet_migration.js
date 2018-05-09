@@ -19,10 +19,10 @@ module.exports = function(deployer, network, accounts) {
   	'Germany',
   	'Russia',
   	true,
-  	1525804927,
+  	1525952073,
   	3600*24,
-  	3600*24//,
-  	//{from: '0x3cea651fcb39719ff6a3c9c5fae2d3d5cef87fdf', value: 1000000000000}
+  	3600*24,
+  	{from: accounts[0], value: 1000000000000}
   )
 
   

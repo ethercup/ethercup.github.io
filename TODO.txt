@@ -1,0 +1,5 @@
+
+
+- revise unit tests
+
+- recalc total payoutPool once winner is decided (some Wei are used for oraclize)

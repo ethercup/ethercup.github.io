@@ -175,7 +175,7 @@ contract Bet is usingOraclize, Ownable {
       public
       payable
   {
-      oraclize_setCustomGasPrice(8e9);   // 4Gwei: 4000000000
+      //oraclize_setCustomGasPrice(8e9);   // 4Gwei: 4000000000
       //uint256 valueGETPRICE = oraclize_getPrice("URL");
       //uint256 valueMSGSENDER = msg.value;
       //require((oraclize_getPrice("URL")) < msg.value); // is it msg.value or this.balance here? TODO: enable
@@ -186,6 +186,7 @@ contract Bet is usingOraclize, Ownable {
       _setTimes(_matchStart, _durationBetting, _durationSuggestConfirm);
   }
 
+  // public for testing
   function _setTimes(uint256 _matchStart, uint256 _durationBetting, uint256 _durationSuggestConfirm) public {
       // miners can cheat on block timestamp with a tolerance of 900 seconds.
       // That's why betting is closed 900 seconds before match start.

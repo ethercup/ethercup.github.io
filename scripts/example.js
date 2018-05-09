@@ -31,16 +31,17 @@ const tenthEther = 100000000000000000 // wei
 
 web3.eth.personal.unlockAccount(owner, "mohoffde91", 0)
 .then((response) => {
-    console.log(response);
-  }).catch((error) => {
-    console.log(error);
-  });
+  console.log(response);
+}).catch((error) => {
+  console.log(error);
+});
+
 web3.eth.personal.unlockAccount(user1, "mohoffde91", 0)
 .then((response) => {
-    console.log(response);
-  }).catch((error) => {
-    console.log(error);
-  });
+  console.log(response);
+}).catch((error) => {
+  console.log(error);
+});
 
 var contract = require("truffle-contract")
 var jsonBlob = require('../build/contracts/Bet.json')

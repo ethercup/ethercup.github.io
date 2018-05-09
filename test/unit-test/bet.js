@@ -1,24 +1,26 @@
-var Bet = artifacts.require("Bet");
+var Bet = artifacts.require('Bet');
 
 var getTimestampNow = () => {
   return Math.floor(Date.now()/1000)
 }
 
+const gameId = '165069'
 const p1 = 'Germany'
 const p2 = 'Russia'
 const drawAllowed = true
 const matchStart = getTimestampNow()+7200
 const durationBetting = 3600
-const durationConfirmation = 3600
+const durationSuggestConfirm = 3600
 
 var getBetWithBettingInactive = (owner) => {
   return Bet.new(
+    gameId,
     p1,
     p2,
     drawAllowed,
     matchStart,
     durationBetting,
-    durationConfirmation,
+    durationSuggestConfirm,
     {from: owner, value: 0}
   );
 }
@@ -47,7 +49,7 @@ const testBet = async (contract, playerBet, meta) => {
     //   assert.equal(await contract.timeBettingCloses(), (matchStart - 900), "timeBettingCloses isn't initialized as expected")
     //   assert.equal(await contract.timeBettingOpens(), await contract.timeBettingCloses() - durationBetting, "timeBettingOpens isn't initialized as expected")
     //   assert.equal(await contract.timeMatchEnds(), await contract.timeBettingCloses() + 105*60, "timeMatchEnds isn't initialized as expected")
-    //   assert.equal(await contract.timeSuggestConfirmEnds(), await contract.timeMatchEnds() + durationConfirmation, "timeMatchEnds isn't initialized as expected")
+    //   assert.equal(await contract.timeSuggestConfirmEnds(), await contract.timeMatchEnds() + durationSuggestConfirm, "timeMatchEnds isn't initialized as expected")
     //   assert.equal(await contract.timeClaimsExpire(), await contract.timeSuggestConfirmEnds() + 8*7*24*60*60, "timeClaimsExpire isn't initialized as expected")
     // })
 
@@ -114,7 +116,7 @@ describe('When in BettingOpen phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
     })
 
     it('should NOT be able for the owner to call claimExpired', async () => {
@@ -132,7 +134,7 @@ describe('When in BettingOpen phase', () => {
     it('should deposit ether correctly and update numBets and totalBets', async () => {
       const expectedAmount = betAmount
       // This should return TRUE?
-      await contract.bet(0, {from: sender, value: betAmount})
+      await contract.bet(1, {from: sender, value: betAmount})
 
       const bet = await contract.betsPlayer1(sender)
       const numBets = await contract.numBetsPlayer1()
@@ -144,8 +146,8 @@ describe('When in BettingOpen phase', () => {
 
     it('should update balances correctly when user bets twice', async () => {
       const expectedAmount = betAmount * 2
-      await contract.bet(0, {from: sender, value: betAmount})
-      await contract.bet(0, {from: sender, value: betAmount})
+      await contract.bet(1, {from: sender, value: betAmount})
+      await contract.bet(1, {from: sender, value: betAmount})
 
       const bet = await contract.betsPlayer1(sender)
       const numBets = await contract.numBetsPlayer1()
@@ -165,7 +167,7 @@ describe('When in BettingOpen phase', () => {
     })
 
     it('should throw when not betted on player 1 or 2', async () => {
-      await assertThrow(contract.bet, [2, {from: sender, value: betAmount}])
+      await assertThrow(contract.bet, [0, {from: sender, value: betAmount}])
       await assertThrow(contract.bet, [3, {from: sender, value: betAmount}])
     })
 
@@ -197,9 +199,9 @@ describe('When in BettingClosed phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
         await contract.bet(1, {from: sender, value: betAmount})
-        await contract._setTimes(matchStart-8000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-8000, durationBetting, durationSuggestConfirm)
     })
 
     it('should NOT allow to bet more', async () => {
@@ -244,9 +246,9 @@ describe('When in BettingWinnerSuggested phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
         await contract.bet(1, {from: sender, value: betAmount})
-        await contract._setTimes(matchStart-15000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-15000, durationBetting, durationSuggestConfirm)
     })
 
     it('should NOT allow to bet more', async () => {
@@ -293,7 +295,7 @@ describe('When in BettingWinnerSuggested phase', () => {
     it('should cancel bet when suggestedWinner is NOT equal to winner', async () => {
       const expectedPhase = 5; // BettingCancelled
       const expectedSuggestedWinner = 1;
-      const expectedWinner = 0;
+      const expectedWinner = 2;
 
       await contract.suggestWinner(expectedSuggestedWinner, {from: owner, value: 0})
       await contract.confirmWinner(expectedWinner, {from: owner, value: 0})
@@ -321,8 +323,8 @@ describe('When in BettingDecided phase and claims haven\'t expired yet', () => {
     const user1BettedOnWinner = accounts[1]
     const user2BettedOnWinner = accounts[2]
     const user3BettedOnLoser = accounts[3]
-    const winner = 0
-    const notWinner = 1
+    const winner = 1
+    const notWinner = 2
 
     const betAmount = 100000
     const totalBetAmount = betAmount * 3
@@ -332,17 +334,17 @@ describe('When in BettingDecided phase and claims haven\'t expired yet', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
         await contract.bet(winner, {from: user1BettedOnWinner, value: betAmount})
         await contract.bet(winner, {from: user2BettedOnWinner, value: betAmount})
         await contract.bet(notWinner, {from: user3BettedOnLoser, value: betAmount})
-        await contract._setTimes(matchStart-15000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-15000, durationBetting, durationSuggestConfirm)
         await contract.suggestWinner(winner, {from: owner, value: 0})
         await contract.confirmWinner(winner, {from: owner, value: 0})
     })
 
     it('should NOT allow to bet more', async () => {
-      await assertThrow(contract.bet, [0, {from: user1BettedOnWinner, value: betAmount}])
+      await assertThrow(contract.bet, [1, {from: user1BettedOnWinner, value: betAmount}])
     })
 
     it('should NOT allow owner to suggest and decide another winner', async () => {
@@ -406,8 +408,8 @@ describe('When in BettingCancelled phase', () => {
     const user2BettedOnWinner = accounts[2]
     const user3BettedOnLoser = accounts[3]
     const user4 = accounts[4]
-    const winner = 0
-    const notWinner = 1
+    const winner = 1
+    const notWinner = 2
 
     const betAmount = 100000
     const totalBetAmount = betAmount * 3
@@ -417,11 +419,11 @@ describe('When in BettingCancelled phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
         await contract.bet(winner, {from: user1BettedOnWinner, value: betAmount})
         await contract.bet(winner, {from: user2BettedOnWinner, value: betAmount})
         await contract.bet(notWinner, {from: user3BettedOnLoser, value: betAmount})
-        await contract._setTimes(matchStart-15000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-15000, durationBetting, durationSuggestConfirm)
         await contract.suggestWinner(winner, {from: owner, value: 0})
         await contract.cancel({from: owner, value: 0})
     })
@@ -465,8 +467,8 @@ describe('When in BettingDecidedExpired phase', () => {
     const user1BettedOnWinner = accounts[1]
     const user2BettedOnWinner = accounts[2]
     const user3BettedOnLoser = accounts[3]
-    const winner = 0
-    const notWinner = 1
+    const winner = 1
+    const notWinner = 2
 
     const betAmount = 100000
     const totalBetAmount = betAmount * 3
@@ -476,14 +478,14 @@ describe('When in BettingDecidedExpired phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
         await contract.bet(winner, {from: user1BettedOnWinner, value: betAmount})
         await contract.bet(winner, {from: user2BettedOnWinner, value: betAmount})
         await contract.bet(notWinner, {from: user3BettedOnLoser, value: betAmount})
-        await contract._setTimes(matchStart-15000, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-15000, durationBetting, durationSuggestConfirm)
         await contract.suggestWinner(winner, {from: owner, value: 0})
         await contract.cancel({from: owner, value: 0})
-        await contract._setTimes(matchStart-18000-4838400, durationBetting, durationConfirmation)
+        await contract._setTimes(matchStart-18000-4838400, durationBetting, durationSuggestConfirm)
     })
 
     it('should NOT allow to bet more', async () => {

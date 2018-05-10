@@ -10,9 +10,9 @@ module.exports = function(deployer, network, accounts) {
   //	{from: '0x3cea651fcb39719ff6a3c9c5fae2d3d5cef87fdf'}
   //)
 
+  console.log(accounts)
 
-
-  // Costs: 5720140, 5946030
+  //Costs: 5720140, 5946030
   deployer.deploy(
   	Bet,
   	'165069',

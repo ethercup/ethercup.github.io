@@ -1,7 +1,7 @@
 pragma solidity ^0.4.23;
 
 import './Bet.sol';
-import './zeppelin/Ownable.sol';
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 
 contract BetManager is Ownable {
 

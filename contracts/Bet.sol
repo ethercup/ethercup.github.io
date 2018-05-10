@@ -1,20 +1,20 @@
 pragma solidity ^0.4.23;
 
-import './zeppelin/Ownable.sol';
+import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import './oraclizeAPI_0.5.sol';
 
 contract Bet is usingOraclize, Ownable {
   using SafeMath for uint256;
 
-  enum Phase { Inactive, BettingOpen, BettingClosed, BettingWinnerSuggested, BettingConfirmed, BettingCancelled, BettingConfirmedExpired }
+  enum Status { Active, Cancelled }
   enum Winner { Undecided, Player1, Player2, Draw }
 
   uint8 private constant FEE_PERCENT = 1;
   uint256 private constant CLAIM_EXPIRES_AFTER = 8 weeks;
   uint8 private constant MAX_GOALS = 25;
 
-  Phase public phase = Phase.Inactive;
+  Status public status = Status.Active;
 
   string public gameId;
   string public p1;
@@ -26,23 +26,18 @@ contract Bet is usingOraclize, Ownable {
   uint256 public timeSuggestConfirmEnds;
   uint256 public timeClaimsExpire;
 
-  event FetchStatusRequest();
-  event FetchStatusResult(string result, uint256 fetchAttempt, uint256 MAX_FETCH_ATTEMPTS);
-  event FetchStatusFinalResult(string result, uint256 fetchAttempt, uint256 MAX_FETCH_ATTEMPTS);
   event FetchMaxAttemptReached(string lastResult, uint256 MAX_FETCH_ATTEMPTS);
-
-  event WinnerSuggested(string winner);
-
-  event BettingOpen(string p1, string p2, uint timeBettingCloses);
-  event BettingClosed(string p1, string p2);
-  event BettingConfirmed(string p1, string p2, Winner winner);
+  event WinnerSuggested(Winner winner);
+  event WinnerConfirmed(Winner winner);
   event BettingCancelled(string p1, string p2);
 
-  bool private fetchingStarted = false;
-  uint256 constant MAX_FETCH_ATTEMPTS = 100;
-  uint256 constant FETCH_INTERVAL = 60*5; // 5min in seconds
+  uint256 private constant MAX_GAS_PRICE = 8e9;
+  uint256 private constant MAX_FETCH_ATTEMPTS = 100;
+  uint256 private constant FETCH_INTERVAL = 60*5; // 5min in seconds
   uint256 private fetchAttempt = 1;
+  bool private isFetchingStarted = false;
   bool public matchFinished = false;
+  bytes32 private hashFinished;
 
   bytes32 private queryStatus;
   bytes32 private queryGoalsP1;
@@ -51,12 +46,12 @@ contract Bet is usingOraclize, Ownable {
   uint private goalsP2;
   bool private goalsP1Fetched = false;
   bool private goalsP2Fetched = false;
-  Winner public suggestedWinner; // default = 0, meaning Undecided
+  bool private winnerSuggested = false;
+  bool private winnerConfirmed = false;
   Winner public winner; // default = 0, meaning Undecided
 
   uint256 public pool;
   uint256 public payoutPool;
-  uint256 public feeEarning;
   mapping(address => uint256) public betsPlayer1;
   mapping(address => uint256) public betsPlayer2;
   uint256 public total;
@@ -65,103 +60,114 @@ contract Bet is usingOraclize, Ownable {
   uint256 public numBetsPlayer1;
   uint256 public numBetsPlayer2;
 
-  /* atPhase modifier or individual modifiers for every phase? */
-  modifier atPhase(Phase _phase) {
-      require(phase == _phase);
+  modifier hasWei() {
+      require(msg.value > 0);
       _;
   }
 
-  modifier isBettingOpen() {
-      require(phase == Phase.BettingOpen);
+  /*
+    Time-based modifiers
+  */
+  modifier isBettingPhase() {
+      require(now >= timeBettingOpens && now < timeBettingCloses, 'It is too early or too late to bet.');
       _;
   }
 
-  modifier isBettingClosed() {
-      require(phase == Phase.BettingOpen);
+  modifier isSuggestConfirmPhase() {
+      require(now > timeMatchEnds && now <= timeSuggestConfirmEnds, 'It is too early or too late to suggest/confirm a winner');
       _;
   }
 
-  modifier isConfirmed() {
-      require(phase == Phase.BettingConfirmed);
-      _;
-  }
-
-  modifier isCancelled() {
-      require(phase == Phase.BettingCancelled);
-      _;
-  }
-
-  modifier canBeCancelled() {
-      require(
-          phase == Phase.Inactive ||
-          phase == Phase.BettingOpen ||
-          phase == Phase.BettingClosed ||
-          phase == Phase.BettingWinnerSuggested
-      );
-      _;
-  }
-
-  modifier withinSuggestConfirmWinnerTime() {
-      require(phase != Phase.BettingCancelled && phase != Phase.BettingConfirmed);
-      require(now > timeMatchEnds && now <= timeSuggestConfirmEnds);
-      _;
-  }
-
-  modifier withinBettingPhase() {
-      if (phase == Phase.Inactive && now >= timeBettingOpens && now < timeBettingCloses) {
-          phase = Phase.BettingOpen;
-          emit BettingOpen(p1, p2, timeBettingCloses);
-      } else if ((phase == Phase.BettingOpen || phase == Phase.Inactive) && now >= timeBettingCloses) {
-          phase = Phase.BettingClosed;
-          emit BettingClosed(p1, p2);
-      }
-      _;
-  }
-
-  modifier stillFetching() {
-      require(fetchingStarted == true);
-      // Makes sure that phase != BettingWinnerSuggested and phase != BettingCancelled
-      require(phase == Phase.BettingClosed); 
-      _;
-  }
-
-  modifier withinClaimNotExpired() {
-      require(phase == Phase.BettingCancelled || phase == Phase.BettingConfirmed);
-      require(now < timeClaimsExpire);
-      _;
-  }
-
-  modifier afterClaimsExpired() {
+  modifier isExpiredPhase() {
       require(now > timeClaimsExpire);
       _;
   }
 
-  modifier eventuallyStartFetch() {
-      if (
-          fetchingStarted == false &&
-          phase != Phase.BettingConfirmed && phase != Phase.BettingCancelled && 
-          now > timeMatchEnds && now <= timeSuggestConfirmEnds
-      ) {
-          fetchMatchStatus(0); // 0 == fetch now, without delay
-          fetchingStarted = true;
-      }
+  modifier isNotExpiredPhase() {
+      require(now < timeClaimsExpire);
       _;
   }
 
+  /*
+    Cancelled modifiers
+  */
+  modifier isCancelled() {
+      require(status == Status.Cancelled);
+      _;
+  }
+
+  modifier isNotCancelled() {
+      require(status == Status.Active);
+      _;
+  }
+
+  modifier canBeCancelled() {
+      require(winnerConfirmed == false, 'Cannot be cancelled because winner is already confirmed');
+      _;
+  }
+
+  /*
+    Winner check modifiers
+  */
+  modifier isWinnerSuggested() {
+      require(winnerSuggested == true);
+      _;
+  }
+
+  modifier isNotWinnerSuggested() {
+      require(winnerSuggested == false);
+      _;
+  }
+
+  modifier isWinnerConfirmed() {
+      require(winnerSuggested == true && winnerConfirmed == true);
+      _;
+  }
+
+  /*
+    Other modifiers
+  */
   modifier hasClaims() {
       require(
         (winner == Winner.Player1 && betsPlayer1[msg.sender] > 0) ||
         (winner == Winner.Player2 && betsPlayer2[msg.sender] > 0) ||
-        ((winner == Winner.Draw || phase == Phase.BettingCancelled) && ((betsPlayer1[msg.sender] > 0) || (betsPlayer2[msg.sender] > 0)))
+        (winner == Winner.Draw && ((betsPlayer1[msg.sender] > 0) || (betsPlayer2[msg.sender] > 0)))
       );
       _;
   }
 
+  modifier startFetchingIfUnstarted() {
+      if (isFetchingStarted == false) {
+          fetchMatchStatus(0); // 0 == fetch now, without delay
+          isFetchingStarted = true;
+      }
+      _;
+  }
+
+
+
+  /*
+    Non-state-changing functions ("view" functions)
+  */
   function hasBets(address _address) internal view returns (bool) {
       if (betsPlayer1[_address] > 0 || betsPlayer2[_address] > 0) {
           return true;
       }
       return false;
+  }
+
+  function isValidWinner(uint8 _winner) internal view returns (bool) {
+      if (_winner == 1 ||  _winner == 2) {
+          return true;
+      }
+      if (drawAllowed == true && _winner == 3) {
+          return true;
+      }
+      return false;
+  }
+
+  function isFinished(string s) private view returns (bool) {
+      return keccak256(s) == hashFinished;
   }
 
   constructor(
@@ -175,10 +181,9 @@ contract Bet is usingOraclize, Ownable {
       public
       payable
   {
-      //oraclize_setCustomGasPrice(8e9);   // 4Gwei: 4000000000
-      //uint256 valueGETPRICE = oraclize_getPrice("URL");
-      //uint256 valueMSGSENDER = msg.value;
-      //require((oraclize_getPrice("URL")) < msg.value); // is it msg.value or this.balance here? TODO: enable
+      oraclize_setCustomGasPrice(MAX_GAS_PRICE);
+      hashFinished = keccak256('FINISHED');
+      
       gameId = _gameId;
       p1 = _p1;
       p2 = _p2;
@@ -188,7 +193,9 @@ contract Bet is usingOraclize, Ownable {
 
   // public for testing
   function _setTimes(uint256 _matchStart, uint256 _durationBetting, uint256 _durationSuggestConfirm) public {
-      // miners can cheat on block timestamp with a tolerance of 900 seconds.
+      require(_durationSuggestConfirm > 3600*2); // longer than 2h in case max match duration is reached (overtimes + penalty shootout)
+
+      // Miners can cheat on block timestamp with a tolerance of 900 seconds.
       // That's why betting is closed 900 seconds before match start.
       timeBettingCloses = _matchStart - 900 seconds;
       timeBettingOpens = timeBettingCloses - _durationBetting;
@@ -197,39 +204,55 @@ contract Bet is usingOraclize, Ownable {
       timeClaimsExpire = timeSuggestConfirmEnds + 8 weeks;
   }
 
-  /* gas: 93620,  93627, 94136 */
-  function bet(uint8 _player) public payable withinBettingPhase isBettingOpen returns (bool) {
-      require(_player == 1 || _player == 2);
-      require(msg.value > 0);
-
-      if (_player == 1) {
-          betsPlayer1[msg.sender] = betsPlayer1[msg.sender].add(msg.value);
-          numBetsPlayer1 += 1;
-          totalPlayer1 = totalPlayer1.add(msg.value);
-      } else {
-          betsPlayer2[msg.sender] = betsPlayer2[msg.sender].add(msg.value);
-          numBetsPlayer2 += 1;
-          totalPlayer2 = totalPlayer2.add(msg.value);
-      }
-      return true;
+  /* OLD BET FUNCTION: gas: 93620,  93627, 94136 */
+  /* OLD BET FUNCTION: KOVAN: 54857 */
+  function betOnPlayer1() external payable
+      isNotCancelled
+      isBettingPhase
+      hasWei
+  {
+      betsPlayer1[msg.sender] = betsPlayer1[msg.sender].add(msg.value);
+      numBetsPlayer1 += 1;
+      totalPlayer1 = totalPlayer1.add(msg.value);
   }
+
+  function betOnPlayer2() external payable
+      isNotCancelled
+      isBettingPhase
+      hasWei
+  {
+      betsPlayer2[msg.sender] = betsPlayer2[msg.sender].add(msg.value);
+      numBetsPlayer2 += 1;
+      totalPlayer2 = totalPlayer2.add(msg.value);
+  }
+
 
   function fetchMatchStatus(uint256 _delay) internal {
       string memory query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, '.fixture');
-      queryStatus = oraclize_query(_delay, "URL", query);    
+      queryStatus = fetch(query, _delay);
   }
 
   function fetchGoalsP1(uint256 _delay) internal {
       string memory query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, '.fixture.result.goalsHomeTeam');
-      queryGoalsP1 = oraclize_query(_delay, "URL", query);  
+      queryGoalsP1 = fetch(query, _delay);
   }
 
   function fetchGoalsP2(uint256 _delay) internal {
       string memory query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, '.fixture.result.goalsAwayTeam');
-      queryGoalsP2 = oraclize_query(_delay, "URL", query);  
+      queryGoalsP2 = fetch(query, _delay);
   }
 
-  function __callback(bytes32 myid, string response) public stillFetching {
+  function fetch(string _query, uint256 _delay) internal
+      returns (bytes32)
+  {
+      return oraclize_query(_delay, "URL", _query);  
+  }
+
+  function __callback(bytes32 myid, string response) public
+      isNotCancelled
+      isSuggestConfirmPhase
+      isNotWinnerSuggested
+  {
       require(msg.sender == oraclize_cbAddress());
       
       // Keeping track of query IDs because one query can result in more than one callback.
@@ -248,19 +271,17 @@ contract Bet is usingOraclize, Ownable {
   }
 
   function _handleMatchStatusResponse(string response) private {
-      if (areEqualStrings(response, 'FINISHED')) {
+      if (isFinished(response)) {
           matchFinished = true;
-          emit FetchStatusFinalResult(response, fetchAttempt, MAX_FETCH_ATTEMPTS);
 
           fetchAttempt = fetchAttempt.add(2);
           fetchGoalsP1(0);
           fetchGoalsP2(0);
       } else if (fetchAttempt < (MAX_FETCH_ATTEMPTS-1)) {
           fetchAttempt = fetchAttempt.add(1);
-          emit FetchStatusResult(response, fetchAttempt, MAX_FETCH_ATTEMPTS);
           fetchMatchStatus(FETCH_INTERVAL);
       } else {
-          phase = Phase.BettingCancelled;
+          status = Status.Cancelled;
           emit FetchMaxAttemptReached(response, MAX_FETCH_ATTEMPTS);
       }
   }
@@ -272,7 +293,7 @@ contract Bet is usingOraclize, Ownable {
           if (fetchAttempt < MAX_FETCH_ATTEMPTS) {
               fetchGoalsP2(FETCH_INTERVAL);
           } else {
-              phase = Phase.BettingCancelled;
+              status = Status.Cancelled;
               emit FetchMaxAttemptReached(strGoals, MAX_FETCH_ATTEMPTS);
           }
       }
@@ -292,7 +313,7 @@ contract Bet is usingOraclize, Ownable {
           if (fetchAttempt < MAX_FETCH_ATTEMPTS) {
               fetchGoalsP2(FETCH_INTERVAL);
           } else {
-              phase = Phase.BettingCancelled;
+              status = Status.Cancelled;
               emit FetchMaxAttemptReached(strGoals, MAX_FETCH_ATTEMPTS);
           }
       }
@@ -305,80 +326,64 @@ contract Bet is usingOraclize, Ownable {
       }
   }
 
-  function _suggestWinner(uint _goalsP1, uint _goalsP2) private returns (Winner) {
+  function _suggestWinner(uint _goalsP1, uint _goalsP2) private {
       if (_goalsP1 > _goalsP2) {
-          suggestedWinner = Winner.Player1;
-          emit WinnerSuggested(p1);
+          winner = Winner.Player1;
       } else if (_goalsP1 < _goalsP2) {
-          suggestedWinner = Winner.Player2;
-          emit WinnerSuggested(p2);
+          winner = Winner.Player2;
       } else {
-          suggestedWinner = Winner.Draw;
-          emit WinnerSuggested('DRAW');
+          winner = Winner.Draw;
       }
 
-      phase = Phase.BettingWinnerSuggested;
-
-      return suggestedWinner;
+      winnerSuggested = true;
+      emit WinnerSuggested(winner);
   }
 
-  function areEqualStrings(string a, string b) private pure returns (bool) {
-       return keccak256(a) == keccak256(b);
-  }
-
-  // for testing
-  function suggestWinner(uint8 _winnerAsInt) external onlyOwner withinSuggestConfirmWinnerTime {
+  function confirmWinner(uint8 _winnerAsInt) external
+      onlyOwner
+      isNotCancelled
+      isSuggestConfirmPhase
+      isWinnerSuggested
+  {
       require(isValidWinner(_winnerAsInt));
-      suggestedWinner = Winner(_winnerAsInt);
-
-      phase = Phase.BettingWinnerSuggested;
-  }
-
-  function confirmWinner(uint8 _winnerAsInt) external onlyOwner atPhase(Phase.BettingWinnerSuggested) withinSuggestConfirmWinnerTime {
-      require(isValidWinner(_winnerAsInt));
-      Winner _winner = Winner(_winnerAsInt);
-
-      if (suggestedWinner == _winner) {
-          winner = _winner;
-          phase = Phase.BettingConfirmed;
+      
+      if (winner == Winner(_winnerAsInt)) {
+          winnerConfirmed = true;
 
           pool = totalPlayer1.add(totalPlayer2);
 
-          uint256 feeAmount;
           if (pool > 0) {
-              feeAmount = pool.mul(FEE_PERCENT).div(100);
-              feeEarning = feeAmount;
+              uint256 feeAmount = pool.mul(FEE_PERCENT).div(100);
               payoutPool = pool.sub(feeAmount);
               owner.transfer(feeAmount);
           } else {
-              feeAmount = 0;
               payoutPool = 0;
           }
 
-          emit BettingConfirmed(p1, p2, winner);
+          emit WinnerConfirmed(winner);
       } else {
           cancel();
       }
   }
 
-  function isValidWinner(uint8 _winner) internal view returns (bool) {
-      if (_winner == 1 ||  _winner == 2) {
-          return true;
-      }
-      if (drawAllowed == true && _winner == 3) {
-          return true;
-      }
-      return false;
-  }
-
-  function cancel() public onlyOwner canBeCancelled {
-      phase = Phase.BettingCancelled;
+  function cancel() public
+      onlyOwner
+      canBeCancelled
+      isNotCancelled
+  {
+      status = Status.Cancelled;
       payoutPool = totalPlayer1.add(totalPlayer2);
 
       emit BettingCancelled(p1, p2);
   }
 
-  function claimWinOrDraw() external eventuallyStartFetch isConfirmed withinClaimNotExpired hasClaims {
+  function claimWinOrDraw() external
+      isNotCancelled
+      isNotExpiredPhase
+      startFetchingIfUnstarted
+      isWinnerConfirmed
+      hasClaims
+  {
       uint256 wonShare;
       uint256 payout;
       if (winner == Winner.Player1){
@@ -399,7 +404,11 @@ contract Bet is usingOraclize, Ownable {
       msg.sender.transfer(payout);
   }
 
-  function claimCancelled() external isCancelled withinClaimNotExpired hasClaims {
+  function claimCancelled() external
+      isCancelled
+      isNotExpiredPhase
+      hasClaims
+  {
       uint256 claim = betsPlayer1[msg.sender] + betsPlayer2[msg.sender]; // claim > 0 since check in hasClaims
 
       betsPlayer1[msg.sender] = 0;
@@ -409,17 +418,25 @@ contract Bet is usingOraclize, Ownable {
       msg.sender.transfer(claim);
   }
 
-  function claimExpired() external onlyOwner afterClaimsExpired {
-      uint256 expired = payoutPool;
+  function claimExpired() external
+      onlyOwner
+      isExpiredPhase
+  {
       payoutPool = 0;
 
-      phase = Phase.BettingConfirmedExpired;
-
-      msg.sender.transfer(expired);
+      msg.sender.transfer(address(this).balance);
   }
 
   /* fallback function */
   function () public payable {
-      revert(); 
+      revert('Function not found.'); 
   }
+
+  // for testing
+  // function suggestWinner(uint8 _winnerAsInt) external onlyOwner withinSuggestConfirmWinnerTime {
+  //     require(isValidWinner(_winnerAsInt));
+  //     suggestedWinner = Winner(_winnerAsInt);
+
+  //     phase = Phase.WinnerSuggested;
+  // }
 }

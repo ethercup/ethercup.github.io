@@ -20,64 +20,64 @@ function fixTruffleContractCompatibilityIssue(contract) {
     return contract;
 }
 
+async function main() {
+  const provider = new Web3.providers.HttpProvider("http://localhost:8545")
+  const web3 = new Web3(provider)
 
-const provider = new Web3.providers.HttpProvider("http://localhost:8545")
-const web3 = new Web3(provider)
+  const betAddress = '0x9fec4dcae2627a26bc3abf130258d3a0d57c6961'
+  const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9' //acc1
+  const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca' //acc2
+  const tenthEther = 1e17 // wei
+  console.log(web3.version)
+  // web3.eth.personal.unlockAccount(owner, "mohoffde91")
+  // .then((response) => {
+  //   console.log(response);
+  // }).catch((error) => {
+  //   console.log('unlockAccount .......',error);
+  // });
 
-const betAddress = '0x772a3c0287289426174edec227e4aa42a1aff539'
-const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9' //acc1
-const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca' //acc2
-const tenthEther = 100000000000000000 // wei
-
-web3.eth.personal.unlockAccount(owner, "mohoffde91", 0)
-.then((response) => {
-  console.log(response);
-}).catch((error) => {
-  console.log(error);
-});
-
-web3.eth.personal.unlockAccount(user1, "mohoffde91", 0)
-.then((response) => {
-  console.log(response);
-}).catch((error) => {
-  console.log(error);
-});
-
-var contract = require("truffle-contract")
-var jsonBlob = require('../build/contracts/Bet.json')
-var betContract = contract(jsonBlob)
-betContract.setProvider(provider)
-fixTruffleContractCompatibilityIssue(betContract) // workaround. see https://github.com/trufflesuite/truffle-contract/issues/57
+  // console.log(await web3.eth.personal.unlockAccount(user1, "mohoffde91"))
+  
+  var contract = require("truffle-contract")
+  var jsonBlob = require('../build/contracts/Bet.json')
+  var betContract = contract(jsonBlob)
+  betContract.setProvider(provider)
+  fixTruffleContractCompatibilityIssue(betContract) // workaround. see https://github.com/trufflesuite/truffle-contract/issues/57
 
 
-const promisify = (inner) =>
-  new Promise((resolve, reject) =>
-    inner((err, res) => {
-      if (err) { reject(err) }
+  // const promisify = (inner) =>
+  //   new Promise((resolve, reject) =>
+  //     inner((err, res) => {
+  //       if (err) { reject(err) }
 
-      resolve(res);
-    })
-  );
+  //       resolve(res);
+  //     })
+  //   );
 
-
-
-
-var bet = betContract.at(betAddress)
-
-//result = bet.bet(1, {from: owner, value: tenthEther})
-//result = await promisify(bet => bet.bet(1, {from: owner, value: tenthEther}))
+  console.log('test')
 
 
-bet.bet(1, {from: user1, value: tenthEther}).then(function(result) {
+  var bet = betContract.at(betAddress)
+  console.log(web3.eth.accounts)
+  result = await bet.bet(1, {from: user1, value: tenthEther})
   console.log(result)
-  // result.tx => transaction hash, string
-  // result.logs => array of trigger events (1 item in this case)
-  // result.receipt => receipt object
-}).catch(function(err) {
-  // Easily catch all errors along the whole execution.
-  console.log("ERROR! " + err.message)
-});
+  // //result = await promisify(bet => bet.bet(1, {from: owner, value: tenthEther}))
 
+
+  // bet.bet(1, {from: user1, value: tenthEther}).then(function(result) {
+  //   console.log(result)
+  //   // result.tx => transaction hash, string
+  //   // result.logs => array of trigger events (1 item in this case)
+  //   // result.receipt => receipt object
+  // }).catch(function(err) {
+  //   // Easily catch all errors along the whole execution.
+  //   console.log("ERROR! " + err.message)
+  // });
+
+
+}
+
+main().catch(console.error)
 // transaction (writes) : meta.sendCoin(account_two, 10, {from: account_one})
 // call (reads): meta.getBalance.call(account_one, {from: account_one})
 

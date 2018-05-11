@@ -6,10 +6,10 @@ contract BetRegistry is Ownable {
 
     mapping(uint256 => address) public betContracts;
     
-    constructor() {
+    constructor() public {
     }
 
-    function registerBet(uint256 _matchStartTime, address _address) external
+    function putBet(uint256 _matchStartTime, address _address) external
         onlyOwner
     {
         betContracts[_matchStartTime] = _address;

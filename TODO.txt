@@ -3,3 +3,4 @@
 - revise unit tests
 
 - recalc total payoutPool once winner is decided (some Wei are used for oraclize)
+- BETTER: send some wei in constructor used to invoke some oraclize calls. make limits so oralicze calls don't use more than consructor wei.

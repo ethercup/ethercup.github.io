@@ -5,19 +5,21 @@ var getTimestampNow = () => {
 }
 
 const gameId = '165069'
+const group = 'A'
 const p1 = 'Germany'
 const p2 = 'Russia'
-const drawAllowed = true
-const matchStart = getTimestampNow()+7200
-const durationBetting = 3600
-const durationSuggestConfirm = 3600
+const isGroupPhase = true
+const matchStart = getTimestampNow()+3600*24*8
+const durationBetting = 3600*24*7
+const durationSuggestConfirm = 3600*24*2
 
 var getBetWithBettingInactive = (owner) => {
   return Bet.new(
     gameId,
+    group,
     p1,
     p2,
-    drawAllowed,
+    isGroupPhase,
     matchStart,
     durationBetting,
     durationSuggestConfirm,
@@ -45,7 +47,7 @@ const testBet = async (contract, playerBet, meta) => {
     // it('should initialize contract correctly', async () => {
     //   assert.equal(await contract.p1(), p1, 'p1 isn\'t initialized as expected')
     //   assert.equal(await contract.p2(), p2, 'p2 isn\'t initialized as expected')
-    //   assert.equal(await contract.drawAllowed(), drawAllowed, 'drawAllowed isn\'t initialized as expected')
+    //   assert.equal(await contract.isGroupPhase(), isGroupPhase, 'isGroupPhase isn\'t initialized as expected')
     //   assert.equal(await contract.timeBettingCloses(), (matchStart - 900), "timeBettingCloses isn't initialized as expected")
     //   assert.equal(await contract.timeBettingOpens(), await contract.timeBettingCloses() - durationBetting, "timeBettingOpens isn't initialized as expected")
     //   assert.equal(await contract.timeMatchEnds(), await contract.timeBettingCloses() + 105*60, "timeMatchEnds isn't initialized as expected")
@@ -72,11 +74,12 @@ describe('When in BettingInactive phase', () => {
     })
 
     it('should NOT allow user to bet', async () => {
-      await assertThrow(contract.bet, [1, {from: sender, value: betAmount}])
+      await assertThrow(contract.betOnPlayer1, {from: sender, value: betAmount})
+      await assertThrow(contract.betOnPlayer2, {from: sender, value: betAmount})
     })
 
     it('should NOT be able for the owner to call claimExpired', async () => {
-      await assertThrow(contract.claimExpired, [{from: owner, value: 0}])
+      await assertThrow(contract.claimExpired, {from: owner, value: 0})
     })
 
     it('should NOT allow a normal user to call confirmWinner/cancel/claimWinOrDraw/claimCancelled/claimExpired', async () => {
@@ -93,12 +96,12 @@ describe('When in BettingInactive phase', () => {
     })
 
     it('should allow owner to cancel', async () => {
-      const expectedPhase = 5; // cancelled
+      const expectedStatus = 1; // cancelled
 
       await contract.cancel({from: owner, value: 0})
 
-      const phase = await contract.phase()
-      assert.equal(phase, expectedPhase, 'phase should be BettingCancelled')
+      const status = await contract.status()
+      assert.equal(status, expectedStatus, 'phase should be BettingCancelled')
     })
   })
 })
@@ -116,7 +119,7 @@ describe('When in BettingOpen phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
+        await contract._setTimes(matchStart-3600*24*3, durationBetting, durationSuggestConfirm)
     })
 
     it('should NOT be able for the owner to call claimExpired', async () => {
@@ -134,7 +137,7 @@ describe('When in BettingOpen phase', () => {
     it('should deposit ether correctly and update numBets and totalBets', async () => {
       const expectedAmount = betAmount
       // This should return TRUE?
-      await contract.bet(1, {from: sender, value: betAmount})
+      await contract.betOnPlayer1({from: sender, value: betAmount})
 
       const bet = await contract.betsPlayer1(sender)
       const numBets = await contract.numBetsPlayer1()
@@ -146,8 +149,8 @@ describe('When in BettingOpen phase', () => {
 
     it('should update balances correctly when user bets twice', async () => {
       const expectedAmount = betAmount * 2
-      await contract.bet(1, {from: sender, value: betAmount})
-      await contract.bet(1, {from: sender, value: betAmount})
+      await contract.betOnPlayer1({from: sender, value: betAmount})
+      await contract.betOnPlayer1({from: sender, value: betAmount})
 
       const bet = await contract.betsPlayer1(sender)
       const numBets = await contract.numBetsPlayer1()
@@ -157,31 +160,18 @@ describe('When in BettingOpen phase', () => {
       assert.equal(totalBets, expectedAmount, 'betting ether should update the total amount of bets')
     })
 
-    it('should be in phase BettingOpen after first bet is placed', async () => {
-      const expectedPhase = 1;
-
-      await contract.bet(1, {from: sender, value: betAmount})
-
-      const phase = await contract.phase()
-      assert.equal(phase, expectedPhase, 'after the first bet, the phase should be BettingOpen')
-    })
-
-    it('should throw when not betted on player 1 or 2', async () => {
-      await assertThrow(contract.bet, [0, {from: sender, value: betAmount}])
-      await assertThrow(contract.bet, [3, {from: sender, value: betAmount}])
-    })
-
     it('should throw when bet includes 0 wei', async () => {
-      await assertThrow(contract.bet, [1, {from: sender, value: 0}])
+      await assertThrow(contract.betOnPlayer1, {from: sender, value: 0})
+      await assertThrow(contract.betOnPlayer2, {from: sender, value: 0})
     })
 
     it('should allow owner to cancel', async () => {
-      const expectedPhase = 5; // cancelled
+      const expectedStatus = 1; // cancelled
 
       await contract.cancel({from: owner, value: 0})
 
-      const phase = await contract.phase()
-      assert.equal(phase, expectedPhase, 'when owner cancels during BettingOpen, it should be reflected in phase change')
+      const status = await contract.status()
+      assert.equal(status, expectedStatus, 'phase should be BettingCancelled')
     })
   })
 })
@@ -199,13 +189,13 @@ describe('When in BettingClosed phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
-        await contract.bet(1, {from: sender, value: betAmount})
-        await contract._setTimes(matchStart-8000, durationBetting, durationSuggestConfirm)
+        await contract._setTimes(matchStart-3600*24*3, durationBetting, durationSuggestConfirm)
+        await contract.betOnPlayer1({from: sender, value: betAmount})
+        await contract._setTimes(matchStart-3600*24*5+3600, durationBetting, durationSuggestConfirm)
     })
 
     it('should NOT allow to bet more', async () => {
-      await assertThrow(contract.bet, [1, {from: sender, value: betAmount}])
+      await assertThrow(contract.betOnPlayer1, {from: sender, value: betAmount})
     })
 
     it('should NOT be able for the owner to call claimExpired', async () => {
@@ -221,12 +211,12 @@ describe('When in BettingClosed phase', () => {
     })
 
     it('should allow owner to cancel', async () => {
-      const expectedPhase = 5; // cancelled
+      const expectedStatus = 1; // cancelled
 
       await contract.cancel({from: owner, value: 0})
 
-      const phase = await contract.phase()
-      assert.equal(phase, expectedPhase, 'when owner cancels during BettingClosed, it should be reflected in phase change')
+      const status = await contract.status()
+      assert.equal(status, expectedStatus, 'phase should be BettingCancelled')
     })
   })
 })
@@ -246,17 +236,17 @@ describe('When in BettingWinnerSuggested phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
-        await contract.bet(1, {from: sender, value: betAmount})
-        await contract._setTimes(matchStart-15000, durationBetting, durationSuggestConfirm)
+        await contract._setTimes(matchStart-3600*24*3, durationBetting, durationSuggestConfirm)
+        await contract.betOnPlayer1({from: sender, value: betAmount})
+        await contract._setTimes(matchStart-(3600*24*8+3600*4), durationBetting, durationSuggestConfirm)
     })
 
     it('should NOT allow to bet more', async () => {
-      await assertThrow(contract.bet, [1, {from: sender, value: betAmount}])
+      await assertThrow(contract.betOnPlayer1, {from: sender, value: betAmount})
     })
 
     it('should NOT be able for the owner to call claimExpired', async () => {
-      await assertThrow(contract.claimExpired, [{from: owner, value: 0}])
+      await assertThrow(contract.claimExpired, {from: owner, value: 0})
     })
 
     it('should NOT allow a normal user to call confirmWinner/cancel/claimWinOrDraw/claimCancelled/claimExpired', async () => {
@@ -267,45 +257,46 @@ describe('When in BettingWinnerSuggested phase', () => {
       await assertThrow(contract.claimExpired, [{from: sender, value: 0}])
     })
 
-    it('should allow owner to cancel', async () => {
-      const expectedPhase = 5; // BettingCancelled
-
-      await contract.cancel({from: owner, value: 0})
-
-      const phase = await contract.phase()
-      assert.equal(phase, expectedPhase, 'when owner cancels during BettingClosed, it should be reflected in phase change')
-    })
-
-    it('should allow owner to confirm winner, update winners correctly set phase to BettingDecided', async () => {
-      const expectedPhase = 4; // BettingDecided
+    it('should allow owner to confirm winner, update winners correctly and set flags', async () => {
       const expectedWinner = 1;
 
       await contract.suggestWinner(expectedWinner, {from: owner, value: 0})
       await contract.confirmWinner(expectedWinner, {from: owner, value: 0})
 
-      const phase = await contract.phase()
-      const suggestedWinner = await contract.suggestedWinner()
       const winner = await contract.winner()
+      const winnerSuggested = await contract.winnerSuggested()
+      const winnerConfirmed = await contract.winnerConfirmed()
 
-      assert.equal(phase, expectedPhase, 'when owner confirms winner, it should be reflected in phase change')
-      assert.equal(suggestedWinner, expectedWinner, 'when owner confirms winner, suggestedWinner should be updated')
-      assert.equal(winner, expectedWinner, 'when owner confirms winner, winner should be updated')
+      assert.equal(winnerSuggested, true, 'winnerSuggested flag should be true')
+      assert.equal(winnerConfirmed, true, 'winnerConfirmed flag should be true')
+      assert.equal(winner, expectedWinner, 'when owner confirms winner, winner should be as expected')
     })
 
-    it('should cancel bet when suggestedWinner is NOT equal to winner', async () => {
-      const expectedPhase = 5; // BettingCancelled
-      const expectedSuggestedWinner = 1;
-      const expectedWinner = 2;
+    it('should cancel bet when confirmedWinner is NOT equal to suggestedWinner', async () => {
+      const expectedStatus = 1
+      const expectedSuggestedWinner = 1
+      const expectedWinner = 2
 
       await contract.suggestWinner(expectedSuggestedWinner, {from: owner, value: 0})
       await contract.confirmWinner(expectedWinner, {from: owner, value: 0})
 
-      const phase = await contract.phase()
-      const suggestedWinner = await contract.suggestedWinner()
-      const winner = await contract.winner()
 
-      assert.notEqual(suggestedWinner, winner, 'variables suggestedWinner and winner should not be equal')
-      assert.equal(phase, expectedPhase, 'when owner confirms winner and it\'s not equal to suggestedWinner, go to BettingCancelled phase')
+      const status = await contract.status()
+      const winnerSuggested = await contract.winnerSuggested()
+      const winnerConfirmed = await contract.winnerConfirmed()
+
+      assert.equal(winnerSuggested, true, 'winnerSuggested flag should be true')
+      assert.equal(winnerConfirmed, false, 'winnerConfirmed flag should be true')
+      assert.equal(status, expectedStatus, 'status should be set to cancelled')
+    })
+
+    it('should allow owner to cancel', async () => {
+      const expectedStatus = 1; // cancelled
+
+      await contract.cancel({from: owner, value: 0})
+
+      const status = await contract.status()
+      assert.equal(status, expectedStatus, 'phase should be BettingCancelled')
     })
   })
 })
@@ -334,17 +325,17 @@ describe('When in BettingDecided phase and claims haven\'t expired yet', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
-        await contract.bet(winner, {from: user1BettedOnWinner, value: betAmount})
-        await contract.bet(winner, {from: user2BettedOnWinner, value: betAmount})
-        await contract.bet(notWinner, {from: user3BettedOnLoser, value: betAmount})
-        await contract._setTimes(matchStart-15000, durationBetting, durationSuggestConfirm)
+        await contract._setTimes(matchStart-3600*24*3, durationBetting, durationSuggestConfirm)
+        await contract.betOnPlayer1({from: user1BettedOnWinner, value: betAmount})
+        await contract.betOnPlayer1({from: user2BettedOnWinner, value: betAmount})
+        await contract.betOnPlayer2({from: user3BettedOnLoser, value: betAmount})
+        await contract._setTimes(matchStart-(3600*24*8+3600*4), durationBetting, durationSuggestConfirm)
         await contract.suggestWinner(winner, {from: owner, value: 0})
         await contract.confirmWinner(winner, {from: owner, value: 0})
     })
 
     it('should NOT allow to bet more', async () => {
-      await assertThrow(contract.bet, [1, {from: user1BettedOnWinner, value: betAmount}])
+      await assertThrow(contract.betOnPlayer1, {from: user1BettedOnWinner, value: betAmount})
     })
 
     it('should NOT allow owner to suggest and decide another winner', async () => {
@@ -358,21 +349,21 @@ describe('When in BettingDecided phase and claims haven\'t expired yet', () => {
 
     it('should NOT allow a normal user to call confirmWinner/cancel/claimCancelled/claimExpired', async () => {
       await assertThrow(contract.confirmWinner, [1, {from: user1BettedOnWinner, value: 0}])
-      await assertThrow(contract.cancel, [{from: user1BettedOnWinner, value: 0}])
-      await assertThrow(contract.claimCancelled, [{from: user1BettedOnWinner, value: 0}])
-      await assertThrow(contract.claimExpired, [{from: user1BettedOnWinner, value: 0}])
+      await assertThrow(contract.cancel, {from: user1BettedOnWinner, value: 0})
+      await assertThrow(contract.claimCancelled, {from: user1BettedOnWinner, value: 0})
+      await assertThrow(contract.claimExpired, {from: user1BettedOnWinner, value: 0})
     })
 
     it('should NOT be able for the owner to call claimExpired', async () => {
-      await assertThrow(contract.claimExpired, [{from: owner, value: 0}])
+      await assertThrow(contract.claimExpired, {from: owner, value: 0})
     })
 
     it('should throw when user tries to claim wins but has no bets', async () => {
-      await assertThrow(contract.claimWinOrDraw, [{from: owner, value: 0}])
+      await assertThrow(contract.claimWinOrDraw, {from: owner, value: 0})
     })
 
     it('should throw when user tries to claim wins but betted on wrong player', async () => {
-      await assertThrow(contract.claimWinOrDraw, [{from: user3BettedOnLoser, value: 0}])
+      await assertThrow(contract.claimWinOrDraw, {from: user3BettedOnLoser, value: 0})
     })
 
     it('should set feeAmount and payoutPool correctly', async () => {
@@ -419,33 +410,33 @@ describe('When in BettingCancelled phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
-        await contract.bet(winner, {from: user1BettedOnWinner, value: betAmount})
-        await contract.bet(winner, {from: user2BettedOnWinner, value: betAmount})
-        await contract.bet(notWinner, {from: user3BettedOnLoser, value: betAmount})
-        await contract._setTimes(matchStart-15000, durationBetting, durationSuggestConfirm)
+        await contract._setTimes(matchStart-3600*24*3, durationBetting, durationSuggestConfirm)
+        await contract.betOnPlayer1({from: user1BettedOnWinner, value: betAmount})
+        await contract.betOnPlayer1({from: user2BettedOnWinner, value: betAmount})
+        await contract.betOnPlayer2({from: user3BettedOnLoser, value: betAmount})
+        await contract._setTimes(matchStart-(3600*24*8+3600*4), durationBetting, durationSuggestConfirm)
         await contract.suggestWinner(winner, {from: owner, value: 0})
         await contract.cancel({from: owner, value: 0})
     })
 
     it('should NOT allow to bet more', async () => {
-      await assertThrow(contract.bet, [0, {from: user1BettedOnWinner, value: betAmount}])
+      await assertThrow(contract.betOnPlayer1, {from: user1BettedOnWinner, value: betAmount})
     })
 
     it('should NOT be able for the owner to call cancel again', async () => {
-      await assertThrow(contract.cancel, [{from: owner, value: 0}])
+      await assertThrow(contract.cancel, {from: owner, value: 0})
     })
 
     it('should NOT be able for the owner to call claimExpired', async () => {
-      await assertThrow(contract.claimExpired, [{from: owner, value: 0}])
+      await assertThrow(contract.claimExpired, {from: owner, value: 0})
     })
 
     it('should NOT be able for user to call claimWinOrDraw', async () => {
-      await assertThrow(contract.claimWinOrDraw, [{from: user1BettedOnWinner, value: 0}])
+      await assertThrow(contract.claimWinOrDraw, {from: user1BettedOnWinner, value: 0})
     })
 
     it('should NOT allow user to reclaim anything when he hasn\'t put any bet', async () => {
-      await assertThrow(contract.claimCancelled, [{from: user4, value: 0}])
+      await assertThrow(contract.claimCancelled, {from: user4, value: 0})
     })
 
     it('should allow user to reclaim his bets', async () => {
@@ -478,41 +469,37 @@ describe('When in BettingDecidedExpired phase', () => {
 
     beforeEach('setup contract for each test', async () => {
         contract = await getBetWithBettingInactive(owner);
-        await contract._setTimes(matchStart-4000, durationBetting, durationSuggestConfirm)
-        await contract.bet(winner, {from: user1BettedOnWinner, value: betAmount})
-        await contract.bet(winner, {from: user2BettedOnWinner, value: betAmount})
-        await contract.bet(notWinner, {from: user3BettedOnLoser, value: betAmount})
-        await contract._setTimes(matchStart-15000, durationBetting, durationSuggestConfirm)
+        await contract._setTimes(matchStart-3600*24*3, durationBetting, durationSuggestConfirm)
+        await contract.betOnPlayer1({from: user1BettedOnWinner, value: betAmount})
+        await contract.betOnPlayer1({from: user2BettedOnWinner, value: betAmount})
+        await contract.betOnPlayer2({from: user3BettedOnLoser, value: betAmount})
+        await contract._setTimes(matchStart-(3600*24*8+3600*4), durationBetting, durationSuggestConfirm)
         await contract.suggestWinner(winner, {from: owner, value: 0})
-        await contract.cancel({from: owner, value: 0})
-        await contract._setTimes(matchStart-18000-4838400, durationBetting, durationSuggestConfirm)
+        await contract.confirmWinner(winner, {from: owner, value: 0})
+        await contract._setTimes(matchStart-3600*24*7*10, durationBetting, durationSuggestConfirm)
     })
 
     it('should NOT allow to bet more', async () => {
-      await assertThrow(contract.bet, [0, {from: user1BettedOnWinner, value: betAmount}])
+      await assertThrow(contract.betOnPlayer1, {from: user1BettedOnWinner, value: betAmount})
     })
 
     it('should NOT be able for the owner to call cancel again', async () => {
-      await assertThrow(contract.cancel, [{from: owner, value: 0}])
+      await assertThrow(contract.cancel, {from: owner, value: 0})
     })
 
     it('should NOT be able for user to call claimWinOrDraw', async () => {
-      await assertThrow(contract.claimWinOrDraw, [{from: owner, value: 0}])
+      await assertThrow(contract.claimWinOrDraw, {from: owner, value: 0})
     })
     
     it('should NOT be able for user to call claimCancelled', async () => {
-      await assertThrow(contract.claimCancelled, [{from: user1BettedOnWinner, value: 0}])
+      await assertThrow(contract.claimCancelled, {from: user1BettedOnWinner, value: 0})
     })
 
     it('should be able for the owner to call claimExpired', async () => {
-      const expectedPhase = 6
-
       await contract.claimExpired({from: owner, value: 0})
 
       payoutPool = await contract.payoutPool()
-      phase = await contract.phase()
       assert.equal(payoutPool, 0, 'payoutPool should be 0')
-      assert.equal(phase, expectedPhase, 'phase should be BettingDecidedExpired')
     })
   })
 })

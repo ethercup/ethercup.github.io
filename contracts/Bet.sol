@@ -11,12 +11,14 @@ contract Bet is usingOraclize, Ownable {
   enum Winner { Undecided, Player1, Player2, Draw }
 
   uint8 private constant FEE_PERCENT = 1;
+  uint256 private constant MIN_SUGGESTCONFIRM_DURATION = 2 hours;
   uint256 private constant CLAIM_EXPIRES_AFTER = 8 weeks;
   uint8 private constant MAX_GOALS = 25;
 
   Status public status = Status.Active;
 
   string public gameId;
+  string public group;
   string public p1;
   string public p2;
   bool public isGroupPhase;
@@ -46,12 +48,14 @@ contract Bet is usingOraclize, Ownable {
   uint private goalsP2;
   bool private goalsP1Fetched = false;
   bool private goalsP2Fetched = false;
-  bool private winnerSuggested = false;
-  bool private winnerConfirmed = false;
+  bool public winnerSuggested = false;
+  bool public winnerConfirmed = false;
+  bool private ownerCalledConfirmFunction = false;
   Winner public winner; // default = 0, meaning Undecided
 
   uint256 public pool;
   uint256 public payoutPool;
+  uint256 public feeEarning;
   mapping(address => uint256) public betsPlayer1;
   mapping(address => uint256) public betsPlayer2;
   uint256 public total;
@@ -124,6 +128,11 @@ contract Bet is usingOraclize, Ownable {
       _;
   }
 
+  modifier isFirstConfirmCall() {
+      require(ownerCalledConfirmFunction == false);
+      _;
+  }
+
   /*
     Other modifiers
   */
@@ -138,7 +147,7 @@ contract Bet is usingOraclize, Ownable {
 
   modifier startFetchingIfUnstarted() {
       if (isFetchingStarted == false) {
-          fetchMatchStatus(0); // 0 == fetch now, without delay
+          //fetchMatchStatus(0); // 0 == fetch now, without delay
           isFetchingStarted = true;
       }
       _;
@@ -182,7 +191,7 @@ contract Bet is usingOraclize, Ownable {
       public
       payable
   {
-      oraclize_setCustomGasPrice(MAX_GAS_PRICE);
+      //oraclize_setCustomGasPrice(MAX_GAS_PRICE);
       hashFinished = keccak256('FINISHED');
       
       gameId = _gameId;
@@ -195,12 +204,12 @@ contract Bet is usingOraclize, Ownable {
 
   // public for testing
   function _setTimes(uint256 _matchStart, uint256 _durationBetting, uint256 _durationSuggestConfirm) public {
-      require(_durationSuggestConfirm > 3600*2); // longer than 2h in case max match duration is reached (overtimes + penalty shootout)
+      require(_durationSuggestConfirm >= MIN_SUGGESTCONFIRM_DURATION); // longer than 2h in case max match duration is reached (overtimes + penalty shootout)
 
       // Miners can cheat on block timestamp with a tolerance of 900 seconds.
       // That's why betting is closed 900 seconds before match start.
       timeBettingCloses = _matchStart - 900 seconds;
-      timeBettingOpens = timeBettingCloses - _durationBetting;
+      timeBettingOpens = _matchStart - _durationBetting;
       timeMatchEnds = timeBettingCloses + 105 minutes;
       timeSuggestConfirmEnds = timeMatchEnds + _durationSuggestConfirm;
       timeClaimsExpire = timeSuggestConfirmEnds + 8 weeks;
@@ -341,14 +350,28 @@ contract Bet is usingOraclize, Ownable {
       emit WinnerSuggested(winner);
   }
 
+  // For testing
+  function suggestWinner(uint8 _winnerAsInt) external
+      onlyOwner
+      isNotCancelled
+      isSuggestConfirmPhase
+      isNotWinnerSuggested
+  {
+      winner = Winner(_winnerAsInt);
+      winnerSuggested = true;
+      emit WinnerSuggested(winner);
+  }
+
   function confirmWinner(uint8 _winnerAsInt) external
       onlyOwner
       isNotCancelled
       isSuggestConfirmPhase
       isWinnerSuggested
+      isFirstConfirmCall
   {
       require(isValidWinner(_winnerAsInt));
-      
+      ownerCalledConfirmFunction = true;
+
       if (winner == Winner(_winnerAsInt)) {
           winnerConfirmed = true;
 
@@ -356,6 +379,7 @@ contract Bet is usingOraclize, Ownable {
 
           if (pool > 0) {
               uint256 feeAmount = pool.mul(FEE_PERCENT).div(100);
+              feeEarning = feeAmount;
               payoutPool = pool.sub(feeAmount);
               owner.transfer(feeAmount);
           } else {

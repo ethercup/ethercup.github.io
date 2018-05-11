@@ -1,30 +1,22 @@
-var BetManager = artifacts.require("./BetManager.sol")
+var BetRegistry = artifacts.require("./BetRegistry.sol")
 var Bet = artifacts.require("./Bet.sol")
-
 
 module.exports = function(deployer, network, accounts) {
 	
-
-  //deployer.deploy(
-  //	BetManager,
-  //	{from: '0x3cea651fcb39719ff6a3c9c5fae2d3d5cef87fdf'}
-  //)
-
   console.log(accounts)
 
   //Costs: 5720140, 5946030
   deployer.deploy(
   	Bet,
   	'165069',
+    'A',
   	'Germany',
   	'Russia',
   	true,
-  	1525952073,
-  	3600*24,
+  	1526148000,
+  	3600*24*7,
   	3600*24,
   	{from: accounts[0], value: 1000000000000}
   )
-
-  
 
 };

@@ -1,6 +1,14 @@
 var Web3 = require('web3')
 var contract = require('truffle-contract')
+var HDWalletProvider = require('truffle-hdwallet-provider');
+var fs = require('fs')
 
+
+// my metamask accounts
+var mnemonic = fs.readFile('../mnemonic.txt', function (err, data) {
+  if (err) throw err;
+  console.log(data);
+});
 // if (typeof web3 !== 'undefined') {
 //   web3 = new Web3(web3.currentProvider)
 // } else {
@@ -23,6 +31,13 @@ function fixTruffleContractCompatibilityIssue(contract) {
 async function main() {
   const provider = new Web3.providers.HttpProvider("http://localhost:8545")
   const web3 = new Web3(provider)
+
+  // INFURA:
+  // if (typeof web3 !== 'undefined') {
+  //     window.web3 = new Web3(web3.currentProvider)
+  // } else {
+  //     window.web3 = new Web3(new Web3.providers.HttpProvider('https://rinkeby.infura.io:443'))
+  // }
 
   const betAddress = '0x9fec4dcae2627a26bc3abf130258d3a0d57c6961'
   const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9' //acc1

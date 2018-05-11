@@ -1,3 +1,11 @@
 https://www.jokecamp.com/blog/guide-to-football-and-soccer-data-and-apis/
 http://www.espn.com/static/apis/devcenter/docs/scores.html#what-it-returns
 https://duckduckgo.com/?q=live+sports+api&t=ffab&ia=web (some XML, some JSON)
+
+
+
+testrpc (unit test) specifics
+-----------------------------
+
+- remove oraclize
+- remove fetchMatchStatus

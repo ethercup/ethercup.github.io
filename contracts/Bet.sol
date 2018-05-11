@@ -19,7 +19,7 @@ contract Bet is usingOraclize, Ownable {
   string public gameId;
   string public p1;
   string public p2;
-  bool public drawAllowed;
+  bool public isGroupPhase;
   uint256 public timeBettingOpens;
   uint256 public timeBettingCloses;
   uint256 public timeMatchEnds;
@@ -160,7 +160,7 @@ contract Bet is usingOraclize, Ownable {
       if (_winner == 1 ||  _winner == 2) {
           return true;
       }
-      if (drawAllowed == true && _winner == 3) {
+      if (isGroupPhase == true && _winner == 3) {
           return true;
       }
       return false;
@@ -172,9 +172,10 @@ contract Bet is usingOraclize, Ownable {
 
   constructor(
       string _gameId,
+      string _group,
       string _p1,
       string _p2,
-      bool _drawAllowed,
+      bool _isGroupPhase,
       uint256 _matchStart,
       uint256 _durationBetting,
       uint256 _durationSuggestConfirm)
@@ -185,9 +186,10 @@ contract Bet is usingOraclize, Ownable {
       hashFinished = keccak256('FINISHED');
       
       gameId = _gameId;
+      group = _group;
       p1 = _p1;
       p2 = _p2;
-      drawAllowed = _drawAllowed;
+      isGroupPhase = _isGroupPhase;
       _setTimes(_matchStart, _durationBetting, _durationSuggestConfirm);
   }
 

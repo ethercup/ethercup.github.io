@@ -1,26 +1,17 @@
 pragma solidity ^0.4.23;
 
-import './Bet.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 
-contract BetManager is Ownable {
+contract BetRegistry is Ownable {
 
-
-    struct Bet {
-        uint256 timeMatchStart,
-        address betContract,
-        string p1,
-        string p2,
-    }
-
-
-
+    mapping(uint256 => address) public betContracts;
     
     constructor() {
-
     }
 
-
-    function registerBet() external {
-        
+    function registerBet(uint256 _matchStartTime, address _address) external
+        onlyOwner
+    {
+        betContracts[_matchStartTime] = _address;
     }
+}

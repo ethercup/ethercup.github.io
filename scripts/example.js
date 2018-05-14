@@ -5,10 +5,10 @@ var fs = require('fs')
 
 
 // my metamask accounts
-var mnemonic = fs.readFile('../mnemonic.txt', function (err, data) {
-  if (err) throw err;
-  console.log(data);
-});
+// var mnemonic = fs.readFile('../mnemonic.txt', function (err, data) {
+//   if (err) throw err;
+//   console.log(data);
+// });
 // if (typeof web3 !== 'undefined') {
 //   web3 = new Web3(web3.currentProvider)
 // } else {
@@ -29,7 +29,8 @@ function fixTruffleContractCompatibilityIssue(contract) {
 }
 
 async function main() {
-  const provider = new Web3.providers.HttpProvider("http://localhost:8545")
+  //const provider = new Web3.providers.HttpProvider("http://localhost:8545")
+  const provider = new Web3.providers.HttpProvider('https://rinkeby.infura.io:443')
   const web3 = new Web3(provider)
 
   // INFURA:
@@ -39,7 +40,10 @@ async function main() {
   //     window.web3 = new Web3(new Web3.providers.HttpProvider('https://rinkeby.infura.io:443'))
   // }
 
-  const betAddress = '0x9fec4dcae2627a26bc3abf130258d3a0d57c6961'
+  const migrationsAddress = '0x50df41a5aeafa1ac8dd7551b4ae803393ace6849'
+  const betRegistry = '0x40131284d87370664fd55bf7e07ed0ff303ce83e'
+  const betAddress = '0x420eef19239833393276600ed532a8fa9392a410'
+
   const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9' //acc1
   const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca' //acc2
   const tenthEther = 1e17 // wei
@@ -73,8 +77,10 @@ async function main() {
 
 
   var bet = betContract.at(betAddress)
-  console.log(web3.eth.accounts)
-  result = await bet.bet(1, {from: user1, value: tenthEther})
+  console.log('before bet')
+  result = await bet.betOnPlayer1({from: user1, value: 2*tenthEther})
+  console.log(result)
+  result = await bet.betOnPlayer2({from: owner, value: 8*tenthEther})
   console.log(result)
   // //result = await promisify(bet => bet.bet(1, {from: owner, value: tenthEther}))
 

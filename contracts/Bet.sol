@@ -36,6 +36,7 @@ contract Bet is usingOraclize, Ownable {
   uint256 private constant MAX_GAS_PRICE = 8e9;
   uint256 private constant MAX_FETCH_ATTEMPTS = 100;
   uint256 private constant FETCH_INTERVAL = 60*5; // 5min in seconds
+  string private URL;
   uint256 private fetchAttempt = 1;
   bool private isFetchingStarted = false;
   bool public matchFinished = false;
@@ -148,7 +149,7 @@ contract Bet is usingOraclize, Ownable {
 
   modifier startFetchingIfUnstarted() {
       if (isFetchingStarted == false) {
-          //fetchMatchStatus(0); // 0 == fetch now, without delay
+          fetchMatchStatus(0); // 0 == fetch now, without delay
           isFetchingStarted = true;
       }
       _;
@@ -157,7 +158,7 @@ contract Bet is usingOraclize, Ownable {
 
 
   /*
-    Non-state-changing functions ("view" functions)
+    Non-state-changing functions ('view' functions)
   */
   function hasBets(address _address) internal view returns (bool) {
       if (betsPlayer1[_address] > 0 || betsPlayer2[_address] > 0) {
@@ -192,7 +193,7 @@ contract Bet is usingOraclize, Ownable {
       public
       payable
   {
-      //oraclize_setCustomGasPrice(MAX_GAS_PRICE);
+      oraclize_setCustomGasPrice(MAX_GAS_PRICE);
       hashFinished = keccak256('FINISHED');
       
       gameId = _gameId;
@@ -200,6 +201,7 @@ contract Bet is usingOraclize, Ownable {
       p1 = _p1;
       p2 = _p2;
       isGroupPhase = _isGroupPhase;
+      URL = 'https://mohoff.de/live.txt';//strConcat('http://api.football-data.org/v1/fixtures/', gameId);
       _setTimes(_matchStart, _durationBetting, _durationSuggestConfirm);
   }
 
@@ -240,7 +242,7 @@ contract Bet is usingOraclize, Ownable {
 
 
   function fetchMatchStatus(uint256 _delay) internal {
-      string memory query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture');
+      string memory query = strConcat('json(', URL, ').fixture');
       queryStatus = fetch(query, _delay);
   }
 
@@ -248,9 +250,9 @@ contract Bet is usingOraclize, Ownable {
       string memory query;
 
       if (_isPenalty == true) {
-        query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture.result.penaltyShootout.goalsHomeTeam');
+        query = strConcat('json(', URL, ').fixture.result.penaltyShootout.goalsHomeTeam');
       } else {
-        query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture.result.goalsHomeTeam');
+        query = strConcat('json(', URL, ').fixture.result.goalsHomeTeam');
       }
       
       queryGoalsP2 = fetch(query, _delay);
@@ -260,9 +262,9 @@ contract Bet is usingOraclize, Ownable {
       string memory query;
 
       if (_isPenalty == true) {
-        query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture.result.penaltyShootout.goalsAwayTeam');
+        query = strConcat('json(', URL, ').fixture.result.penaltyShootout.goalsAwayTeam');
       } else {
-        query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture.result.goalsAwayTeam');
+        query = strConcat('json(', URL, ').fixture.result.goalsAwayTeam');
       }
 
       queryGoalsP2 = fetch(query, _delay);
@@ -271,7 +273,7 @@ contract Bet is usingOraclize, Ownable {
   function fetch(string _query, uint256 _delay) internal
       returns (bytes32)
   {
-      return oraclize_query(_delay, "URL", _query);  
+      return oraclize_query(_delay, 'URL', _query);  
   }
 
   function __callback(bytes32 myid, string response) public

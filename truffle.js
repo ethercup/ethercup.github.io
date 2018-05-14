@@ -1,12 +1,17 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const fs = require('fs')
 
-const mnemonic = fs.readFile('mnemonic.txt', function (err, data) {
+const mnemonic2 = fs.readFile('mnemonic.txt', 'utf8', function (err, data) {
   if (err) throw err;
   console.log(data);
 });
+const mnemonic = 'tail mimic satisfy bicycle steak electric taxi marine electric frame canal seed'
 
-const apiKey = fs.readFile('infura.txt', function (err, data) {
+console.log(mnemonic2)
+console.log(mnemonic)
+
+
+const apiKey = fs.readFile('infura.txt', 'utf8', function (err, data) {
   if (err) throw err;
   console.log(data);
 });
@@ -38,7 +43,7 @@ module.exports = {
     },
     kovan: {
       provider: function() {
-        return new HDWalletProvider(mnemonic, 'https://rinkeby.infura.io/' + apiKey, 0) // use first account as owner. Same effect as (from: "0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9")
+        return new HDWalletProvider(mnemonic, 'https://kovan.infura.io/' + apiKey, 0) // use first account as owner. Same effect as (from: "0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9")
       },
       network_id: 42,
       gas: 7.9e6 // 7999992

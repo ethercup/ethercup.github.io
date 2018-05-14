@@ -48,6 +48,7 @@ contract Bet is usingOraclize, Ownable {
   uint private goalsP2;
   bool private goalsP1Fetched = false;
   bool private goalsP2Fetched = false;
+  bool private fetchingPenaltyGoals = false;
   bool public winnerSuggested = false;
   bool public winnerConfirmed = false;
   bool private ownerCalledConfirmFunction = false;
@@ -239,17 +240,31 @@ contract Bet is usingOraclize, Ownable {
 
 
   function fetchMatchStatus(uint256 _delay) internal {
-      string memory query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, '.fixture');
+      string memory query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture');
       queryStatus = fetch(query, _delay);
   }
 
-  function fetchGoalsP1(uint256 _delay) internal {
-      string memory query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, '.fixture.result.goalsHomeTeam');
-      queryGoalsP1 = fetch(query, _delay);
+  function fetchGoalsP1(uint256 _delay, bool _isPenalty) internal {
+      string memory query;
+
+      if (_isPenalty == true) {
+        query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture.result.penaltyShootout.goalsHomeTeam');
+      } else {
+        query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture.result.goalsHomeTeam');
+      }
+      
+      queryGoalsP2 = fetch(query, _delay);
   }
 
-  function fetchGoalsP2(uint256 _delay) internal {
-      string memory query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, '.fixture.result.goalsAwayTeam');
+  function fetchGoalsP2(uint256 _delay, bool _isPenalty) internal {
+      string memory query;
+
+      if (_isPenalty == true) {
+        query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture.result.penaltyShootout.goalsAwayTeam');
+      } else {
+        query = strConcat('json(http://api.football-data.org/v1/fixtures/', gameId, ').fixture.result.goalsAwayTeam');
+      }
+
       queryGoalsP2 = fetch(query, _delay);
   }
 
@@ -286,8 +301,8 @@ contract Bet is usingOraclize, Ownable {
           matchFinished = true;
 
           fetchAttempt = fetchAttempt.add(2);
-          fetchGoalsP1(0);
-          fetchGoalsP2(0);
+          fetchGoalsP1(0, false);
+          fetchGoalsP2(0, false);
       } else if (fetchAttempt < (MAX_FETCH_ATTEMPTS-1)) {
           fetchAttempt = fetchAttempt.add(1);
           fetchMatchStatus(FETCH_INTERVAL);
@@ -302,7 +317,7 @@ contract Bet is usingOraclize, Ownable {
       if (goals > MAX_GOALS) {
           fetchAttempt = fetchAttempt.add(1);
           if (fetchAttempt < MAX_FETCH_ATTEMPTS) {
-              fetchGoalsP2(FETCH_INTERVAL);
+              fetchGoalsP1(FETCH_INTERVAL, fetchingPenaltyGoals);
           } else {
               status = Status.Cancelled;
               emit FetchMaxAttemptReached(strGoals, MAX_FETCH_ATTEMPTS);
@@ -322,7 +337,7 @@ contract Bet is usingOraclize, Ownable {
       if (goals > MAX_GOALS) {
           fetchAttempt = fetchAttempt.add(1);
           if (fetchAttempt < MAX_FETCH_ATTEMPTS) {
-              fetchGoalsP2(FETCH_INTERVAL);
+              fetchGoalsP2(FETCH_INTERVAL, fetchingPenaltyGoals);
           } else {
               status = Status.Cancelled;
               emit FetchMaxAttemptReached(strGoals, MAX_FETCH_ATTEMPTS);
@@ -343,7 +358,19 @@ contract Bet is usingOraclize, Ownable {
       } else if (_goalsP1 < _goalsP2) {
           winner = Winner.Player2;
       } else {
-          winner = Winner.Draw;
+          // same amount of goals
+          if (isGroupPhase == true) {
+              winner = Winner.Draw;
+          } else {
+              // We are in knockout-stage, thus Winner.Draw not possible
+              // --> Fetch penalty shootout goals
+              // If still P1 and P2 have same amount of goals (shouldn't happen), MAX_FETCH_ATTEMPTS should eventually cancel the bet
+              fetchingPenaltyGoals = true;
+              goalsP1Fetched = false;
+              goalsP1Fetched = false;
+              fetchGoalsP1(0, true);
+              fetchGoalsP2(0, true);
+          }
       }
 
       winnerSuggested = true;

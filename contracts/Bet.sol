@@ -17,7 +17,8 @@ contract Bet is usingOraclize, Ownable {
 
   Status public status = Status.Active;
 
-  string public gameId;
+  uint8 public matchId;
+  string public apiMatchId;
   string public group;
   string public p1;
   string public p2;
@@ -200,7 +201,8 @@ contract Bet is usingOraclize, Ownable {
   }
 
   constructor(
-      string _gameId,
+      uint8 _matchId,
+      string _apiMatchId,
       string _group,
       string _p1,
       string _p2,
@@ -214,12 +216,13 @@ contract Bet is usingOraclize, Ownable {
       oraclize_setCustomGasPrice(MAX_GAS_PRICE);
       hashFinished = keccak256('FINISHED');
       
-      gameId = _gameId;
+      matchId = _matchId;
+      apiMatchId = _apiMatchId;
       group = _group;
       p1 = _p1;
       p2 = _p2;
       isGroupPhase = _isGroupPhase;
-      URL = 'https://mohoff.de/live.txt';//strConcat('http://api.football-data.org/v1/fixtures/', gameId);
+      URL = 'https://mohoff.de/live.txt';//strConcat('http://api.football-data.org/v1/fixtures/', apiMatchId);
       _setTimes(_matchStart, _durationBetting, _durationSuggestConfirm);
   }
 
@@ -512,7 +515,7 @@ contract Bet is usingOraclize, Ownable {
   }
 
   /* fallback function */
-  function () public payable {
+  function () external payable {
       revert(); 
   }
 }

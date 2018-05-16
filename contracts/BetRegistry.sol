@@ -4,14 +4,20 @@ import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 
 contract BetRegistry is Ownable {
 
-    mapping(uint256 => address) public betContracts;
+    uint8 private numMatches = 64;
+    address[64] public betContracts;
     
     constructor() public {
     }
 
-    function putBet(uint256 _matchStartTime, address _address) external
+    function putBet(uint8 _id, address _address) external
         onlyOwner
     {
-        betContracts[_matchStartTime] = _address;
+        betContracts[_id] = _address;
+    }
+
+    /* fallback function */
+    function () public payable {
+      revert(); 
     }
 }

@@ -65,7 +65,7 @@ async function main() {
   var betContract = contract(jsonBlob)
   betContract.setProvider(provider)
   betContract.defaults({
-    gasPrice: 12e9,
+    gasPrice: 6e9,
   })
   fixTruffleContractCompatibilityIssue(betContract) // workaround. see https://github.com/trufflesuite/truffle-contract/issues/57
 
@@ -86,11 +86,12 @@ async function main() {
   //console.log(await bet.betOnPlayer2({from: user1, value: 0.2*tenthEther}))
   //console.log(await bet.betOnPlayer2({from: user2, value: 0.3*tenthEther}))
 
-  // ALL FAIL (good)
-  //console.log(await bet.claimWinOrDraw({from: user1}))
+  //console.log(await bet.claimWinOrDraw({from: user2}))
   //console.log(await bet.cancel({from: user1}))
   //console.log(await bet.confirmWinner(1, {from: user1}))
   //console.log(await bet.claimExpired({from: user1}))
+
+  //console.log(await bet.confirmWinner(2, {from: owner}))
   
   //bet.claimWinOrDraw({from: owner})
 

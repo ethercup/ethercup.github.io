@@ -3,6 +3,11 @@ var contract = require('truffle-contract')
 var HDWalletProvider = require('truffle-hdwallet-provider');
 var fs = require('fs')
 
+const mnemonic = fs.readFileSync('./mnemonic.txt', 'utf8', function (err, data) {
+  if (err) throw err;
+  console.log(data);
+});
+
 
 // my metamask accounts
 // var mnemonic = fs.readFile('../mnemonic.txt', function (err, data) {
@@ -30,7 +35,7 @@ function fixTruffleContractCompatibilityIssue(contract) {
 
 async function main() {
   //const provider = new Web3.providers.HttpProvider("http://localhost:8545")
-  const provider = new Web3.providers.HttpProvider('https://rinkeby.infura.io:443')
+  const provider = new HDWalletProvider(mnemonic, "http://localhost:8545", 0, 5)
   const web3 = new Web3(provider)
 
   // INFURA:
@@ -40,27 +45,28 @@ async function main() {
   //     window.web3 = new Web3(new Web3.providers.HttpProvider('https://rinkeby.infura.io:443'))
   // }
 
-  const migrationsAddress = '0x50df41a5aeafa1ac8dd7551b4ae803393ace6849'
-  const betRegistry = '0x40131284d87370664fd55bf7e07ed0ff303ce83e'
-  const betAddress = '0x420eef19239833393276600ed532a8fa9392a410'
+  const migrationsAddress = '0x9866102e9ee2c5d668bf70c8f50647fb725e4b0c'
+  const betRegistry = '0xd344a3f84d5c1fe59d39cc61b386e760f97f75ff'
+  const betAddress = '0xada59dd51d20f16d3a2d7aca19ad88ff62664dba'
 
-  const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9' //acc1
-  const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca' //acc2
+  const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9'.toLowerCase() //acc1
+  const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca'.toLowerCase() //acc2
+  const user2 = '0xA2DA2A177f0C9645c64124A61F5FcF08E281b0Da'.toLowerCase() //acc3
   const tenthEther = 1e17 // wei
-  console.log(web3.version)
-  // web3.eth.personal.unlockAccount(owner, "mohoffde91")
-  // .then((response) => {
-  //   console.log(response);
-  // }).catch((error) => {
-  //   console.log('unlockAccount .......',error);
-  // });
 
-  // console.log(await web3.eth.personal.unlockAccount(user1, "mohoffde91"))
+
+  console.log(await web3.eth.personal.unlockAccount(owner, "mohoffde91"))
+  console.log(await web3.eth.personal.unlockAccount(user1, "mohoffde91"))
+  console.log(await web3.eth.personal.unlockAccount(user2, "mohoffde91"))
+  
   
   var contract = require("truffle-contract")
   var jsonBlob = require('../build/contracts/Bet.json')
   var betContract = contract(jsonBlob)
   betContract.setProvider(provider)
+  betContract.defaults({
+    gasPrice: 12e9,
+  })
   fixTruffleContractCompatibilityIssue(betContract) // workaround. see https://github.com/trufflesuite/truffle-contract/issues/57
 
 
@@ -72,16 +78,65 @@ async function main() {
   //       resolve(res);
   //     })
   //   );
-
-  console.log('test')
-
-
+  // oralice_getprice: 1827700000000000, 1347700000000000
+  
   var bet = betContract.at(betAddress)
-  console.log('before bet')
-  result = await bet.betOnPlayer1({from: user1, value: 2*tenthEther})
-  console.log(result)
-  result = await bet.betOnPlayer2({from: owner, value: 8*tenthEther})
-  console.log(result)
+
+  //console.log(await bet.betOnPlayer1({from: owner, value: 0.5*tenthEther}))
+  //console.log(await bet.betOnPlayer2({from: user1, value: 0.2*tenthEther}))
+  //console.log(await bet.betOnPlayer2({from: user2, value: 0.3*tenthEther}))
+
+  // ALL FAIL (good)
+  //console.log(await bet.claimWinOrDraw({from: user1}))
+  //console.log(await bet.cancel({from: user1}))
+  //console.log(await bet.confirmWinner(1, {from: user1}))
+  //console.log(await bet.claimExpired({from: user1}))
+  
+  //bet.claimWinOrDraw({from: owner})
+
+  console.log("STATUS: " + await bet.status.call())  
+
+  console.log("\n---BETs---")
+  console.log("betsPlayer1: " + await bet.betsPlayer1.call(owner))
+  console.log("betsPlayer2: " + await bet.betsPlayer2.call(owner))
+  console.log("numBetsPlayer1: " + await bet.numBetsPlayer1.call())
+  console.log("numBetsPlayer2: " + await bet.numBetsPlayer2.call())
+  console.log("totalPlayer1: " + await bet.totalPlayer1.call())
+  console.log("totalPlayer2: " + await bet.totalPlayer2.call())
+
+  console.log("\n---WINNER FETCH---")
+  console.log("GAS needed for start fetching (first call to claimWinOrDraw: " + await bet.getMinOraclizeGasCost.call())
+  console.log("isFetchingStarted: " + await bet.isFetchingStarted.call())
+  console.log("queryStatus: " + await bet.queryStatus.call())
+  console.log("queryGoalsP1: " + await bet.queryGoalsP1.call())
+  console.log("queryGoalsP2: " + await bet.queryGoalsP2.call())  
+  console.log("matchFinished: " + await bet.matchFinished.call())
+  console.log("fetchAttempt: " + await bet.fetchAttempt.call())
+  
+
+  console.log("timeMatchEnds: " + await bet.timeMatchEnds.call())
+  console.log("timeSuggestConfirmEnds: " + await bet.timeSuggestConfirmEnds.call())
+  console.log("test: " + await bet.test.call())
+
+  console.log("goalsP1: " + await bet.goalsP1.call())
+  console.log("goalsP2: " + await bet.goalsP2.call())
+  console.log("goalsP1Fetched: " + await bet.goalsP1Fetched.call())
+  console.log("goalsP2Fetched: " + await bet.goalsP2Fetched.call())
+  console.log("winner: " + await bet.winner.call())
+
+  //console.log("CONFIRM WINNER:" + await bet.confirmWinner(2, {from: owner}))
+  console.log("\n---WINNER CONFIRM---")
+  console.log("winnerConfirmed: " + await bet.winnerConfirmed.call())
+  console.log("pool: " + await bet.pool.call())
+  console.log("payoutPool: " + await bet.payoutPool.call())
+  console.log("feeEarning: " + await bet.feeEarning.call())
+
+  // console.log('before bet')
+  // result = await bet.betOnPlayer1({from: owner, value: 2*tenthEther})
+  // console.log(result)
+  // console.log("----done")
+  // result = await bet.betOnPlayer2({from: user1, value: 8*tenthEther})
+  // console.log(result)
   // //result = await promisify(bet => bet.bet(1, {from: owner, value: tenthEther}))
 
 

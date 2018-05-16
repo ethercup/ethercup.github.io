@@ -1,15 +1,10 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const fs = require('fs')
 
-const mnemonic2 = fs.readFile('mnemonic.txt', 'utf8', function (err, data) {
+const mnemonic = fs.readFileSync('./mnemonic.txt', 'utf8', function (err, data) {
   if (err) throw err;
   console.log(data);
 });
-const mnemonic = 'tail mimic satisfy bicycle steak electric taxi marine electric frame canal seed'
-
-console.log(mnemonic2)
-console.log(mnemonic)
-
 
 const apiKey = fs.readFile('infura.txt', 'utf8', function (err, data) {
   if (err) throw err;
@@ -41,15 +36,20 @@ module.exports = {
       network_id: 4,
       gas: 7.6e6
     },
+    // kovan: {
+    //   provider: function() {
+    //     return new HDWalletProvider(mnemonic, 'https://kovan.infura.io/' + apiKey, 0) // use first account as owner. Same effect as (from: "0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9")
+    //   },
+    //   network_id: 42,
+    //   gas: 7.9e6
+    // },
     kovan: {
-      provider: function() {
-        return new HDWalletProvider(mnemonic, 'https://kovan.infura.io/' + apiKey, 0) // use first account as owner. Same effect as (from: "0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9")
-      },
+      provider: new HDWalletProvider(mnemonic, "http://localhost:8545"),
+      //host: "localhost",
+      port: 8545,
       network_id: 42,
-      gas: 7.9e6 // 7999992
-      // host: "localhost",
-      // port: 8545,
-      // from: "0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9",
+      gas: 7.9e6,
+      gasPrice: 20e9
     },
     live: {
       host: "178.25.19.88", // Random IP for example purposes (do not use)

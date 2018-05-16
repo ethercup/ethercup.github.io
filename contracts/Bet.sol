@@ -97,7 +97,7 @@ contract Bet is usingOraclize, Ownable {
       _;
   }
 
-  modifier isNotExpiredPhase() {
+  modifier isClaimNotExpired() {
       require(now < timeClaimsExpire);
       _;
   }
@@ -443,7 +443,7 @@ contract Bet is usingOraclize, Ownable {
   function claimWinOrDraw() external
       isNotCancelled
       isMatchOver
-      isNotExpiredPhase
+      isClaimNotExpired
       startFetchingIfUnstarted
       isWinnerConfirmed
       hasClaims
@@ -472,7 +472,7 @@ contract Bet is usingOraclize, Ownable {
 
   function claimCancelled() external
       isCancelled
-      isNotExpiredPhase
+      isClaimNotExpired
       hasClaims
   {
       uint256 claim = betsPlayer1[msg.sender] + betsPlayer2[msg.sender]; // claim > 0 since check in hasClaims

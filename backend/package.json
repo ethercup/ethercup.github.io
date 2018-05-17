@@ -1,8 +1,8 @@
 {
-  "name": "betting-contracts",
+  "name": "ethercup-contracts",
   "version": "1.0.0",
-  "description": "",
-  "main": "truffle-config.js",
+  "description": "smart contracts for dapp ethercup",
+  "main": "truffle.js",
   "directories": {
     "test": "test"
   },
@@ -11,8 +11,5 @@
     "start": "node scripts/example.js"
   },
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "zeppelin-solidity": "^1.8.0"
-  }
+  "license": "ISC"
 }

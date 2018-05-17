@@ -47,7 +47,7 @@ async function main() {
 
   const migrationsAddress = '0x9866102e9ee2c5d668bf70c8f50647fb725e4b0c'
   const betRegistry = '0xd344a3f84d5c1fe59d39cc61b386e760f97f75ff'
-  const betAddress = '0xada59dd51d20f16d3a2d7aca19ad88ff62664dba'
+  const betAddress = '0x2a304b073a36507845495f3fa330e34d179443f2'
 
   const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9'.toLowerCase() //acc1
   const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca'.toLowerCase() //acc2

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.23;
 
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
-import 'zeppelin-solidity/contracts/math/SafeMath.sol';
+import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
+import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 import './oraclizeAPI_0.4.sol';
 
 contract Bet is usingOraclize, Ownable {
@@ -43,7 +43,7 @@ contract Bet is usingOraclize, Ownable {
   uint256 private constant MAX_FETCH_ATTEMPTS = 12; // currently 0.8-1.2 USD per fetch
   uint256 private constant FETCH_INTERVAL = 60*60; // 60min in seconds
   string private URL;
-  uint256 public fetchAttempt = 1;
+  uint256 public fetchAttempt;
   bool public isFetchingStarted = false;
   bool public matchFinished = false;
   bytes32 private hashFinished;
@@ -183,7 +183,8 @@ contract Bet is usingOraclize, Ownable {
     Helper functions
   */
   function getMinOraclizeGasCost() public returns (uint256) {
-      return oraclize_getPrice("URL", GAS_LIMIT);
+      test = "a";
+      return oraclize_getPrice("URL", GAS_LIMIT_GOALS);
   }
 
   function isValidWinner(uint8 _winner) private view returns (bool) {
@@ -243,7 +244,7 @@ contract Bet is usingOraclize, Ownable {
   /* OLD BET FUNCTION: gas: 93620,  93627, 94136 */
   /* OLD BET FUNCTION: KOVAN: 54857 */
 
-  // KOVAN: 84370, 53534, 84370,
+  // KOVAN: 84260
   function betOnPlayer1() external payable
       isNotCancelled
       isBettingPhase
@@ -254,7 +255,7 @@ contract Bet is usingOraclize, Ownable {
       totalPlayer1 = totalPlayer1.add(msg.value);
   }
 
-  // 83534, 83534, 53534
+  // 53534, 83534
   function betOnPlayer2() external payable
       isNotCancelled
       isBettingPhase
@@ -301,7 +302,7 @@ contract Bet is usingOraclize, Ownable {
   function fetch(string _query, uint256 _delay, uint256 _gaslimit) private
       returns (bytes32)
   {
-      if (this.balance > oraclize_getPrice("URL", _gaslimit) &&
+      if (address(this).balance > oraclize_getPrice("URL", _gaslimit) &&
           fetchAttempt < MAX_FETCH_ATTEMPTS)
       {
           fetchAttempt = fetchAttempt.add(1);
@@ -317,7 +318,7 @@ contract Bet is usingOraclize, Ownable {
   // when match is FINISHED the first time: 217752, 217688, 217752
   // retrieve goals: 73985, 219830, 73751, 227547, 73687, 227547, 73751, 227547
   // retrieve penalty goals: 43985, 56282, 43751, 56516, 43751, 56516
-  function __callback(bytes32 myid, string response) external
+  function __callback(bytes32 myid, string response) public
       onlyOraclize
       isNotWinnerSuggested
   {

@@ -12,12 +12,13 @@ module.exports = function(deployer, network, accounts) {
 
   deployer.deploy(
   	Bet,
+    0,
   	'165069',
     'A',
   	'Germany',
   	'Russia',
   	false,
-  	1526486400,
+  	1526572800,
   	3600*24*7,
   	3600*24,
   	{from: accounts[0], value: 1e17}

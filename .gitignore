@@ -1,7 +1,7 @@
-mnemonic.txt
-infura.txt
-build/
-node_modules/
+backend/mnemonic.txt
+backend/infura.txt
+backend/build/
+backend/node_modules/
 
 
 # Created by https://www.gitignore.io/api/node,solidity

@@ -18,7 +18,7 @@ module.exports = function(deployer, network, accounts) {
   	'Germany',
   	'Russia',
   	false,
-  	1526572800,
+  	1526659200,
   	3600*24*7,
   	3600*24,
   	{from: accounts[0], value: 1e17}

@@ -47,7 +47,7 @@ async function main() {
 
   const migrationsAddress = '0x9866102e9ee2c5d668bf70c8f50647fb725e4b0c'
   const betRegistry = '0xd344a3f84d5c1fe59d39cc61b386e760f97f75ff'
-  const betAddress = '0x2a304b073a36507845495f3fa330e34d179443f2'
+  const betAddress = '0x77ada3b6e85b7eb6b5f8f51cf958a62aabded2fa'
 
   const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9'.toLowerCase() //acc1
   const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca'.toLowerCase() //acc2
@@ -82,11 +82,11 @@ async function main() {
   
   var bet = betContract.at(betAddress)
 
-  //console.log(await bet.betOnPlayer1({from: owner, value: 0.5*tenthEther}))
-  //console.log(await bet.betOnPlayer2({from: user1, value: 0.2*tenthEther})) --> gets 0.0396
-  //console.log(await bet.betOnPlayer2({from: user2, value: 0.3*tenthEther})) --> gets 0.03564
+  console.log(await bet.betOnPlayer1({from: owner, value: 0.5*tenthEther}))
+  console.log(await bet.betOnPlayer2({from: user1, value: 0.2*tenthEther})) //--> gets 0.0396
+  console.log(await bet.betOnPlayer2({from: user2, value: 0.3*tenthEther})) //--> gets 0.03564
 
-  console.log(await bet.claimWinOrDraw({from: user2}))
+  //console.log(await bet.claimWinOrDraw({from: user2}))
   //console.log(await bet.cancel({from: user1}))
   //console.log(await bet.confirmWinner(1, {from: user1}))
   //console.log(await bet.claimExpired({from: user1}))

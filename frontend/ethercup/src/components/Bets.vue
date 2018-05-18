@@ -4,13 +4,11 @@
     <ul>
       <Bet
         v-for="(bet, index) in bets" :key="bet.id"
-        v-bind:data="bet"
-        v-bind:id="bet.id"
-        v-bind:key="bet.id"
+        v-bind:bet="bet"
+        v-bind:key="bet.matchId"
       />
     </ul>
-  </ul>
-  </div>
+</div>
 </template>
 
 
@@ -18,7 +16,11 @@
 <script>
 import Bet from './Bet'
 
-Vue.component('Bets', {
+export default {
+  name: 'Bets',
+  components: {
+    Bet
+  },
   data () {
     return {
       headline: 'Bets',
@@ -35,7 +37,7 @@ Vue.component('Bets', {
   created: function () {
     console.log('Bets created.')// + this.a) // this==vm instance
   }
-})
+}
 </script>
 
 

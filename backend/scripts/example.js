@@ -83,10 +83,10 @@ async function main() {
   var bet = betContract.at(betAddress)
 
   //console.log(await bet.betOnPlayer1({from: owner, value: 0.5*tenthEther}))
-  //console.log(await bet.betOnPlayer2({from: user1, value: 0.2*tenthEther}))
-  //console.log(await bet.betOnPlayer2({from: user2, value: 0.3*tenthEther}))
+  //console.log(await bet.betOnPlayer2({from: user1, value: 0.2*tenthEther})) --> gets 0.0396
+  //console.log(await bet.betOnPlayer2({from: user2, value: 0.3*tenthEther})) --> gets 0.03564
 
-  //console.log(await bet.claimWinOrDraw({from: user2}))
+  console.log(await bet.claimWinOrDraw({from: user2}))
   //console.log(await bet.cancel({from: user1}))
   //console.log(await bet.confirmWinner(1, {from: user1}))
   //console.log(await bet.claimExpired({from: user1}))

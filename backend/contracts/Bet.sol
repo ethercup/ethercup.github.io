@@ -35,7 +35,7 @@ contract Bet is usingOraclize, Ownable {
   event WinnerConfirmed(Winner winner);
   event BettingCancelled(string p1, string p2);
 
-  uint256 private MAX_GAS_PRICE = 6e9; // 8GWei. Not constant so that it can be increased by the owner
+  uint256 private MAX_GAS_PRICE = 6e9; // 8GWei. Not constant so that it can be increased by the owner in case of higher demands in the future
   //uint256 private constant GAS_LIMIT = 300000; // works: 300000
   uint256 private constant GAS_LIMIT_MATCHSTATUS = 225000; // works: 300000
   uint256 private constant GAS_LIMIT_GOALS = 240000; // works: 300000
@@ -65,6 +65,7 @@ contract Bet is usingOraclize, Ownable {
 
   uint256 public pool;
   uint256 public payoutPool;
+  uint256 private remainingPayoutPool;
   uint256 public feeEarning;
   mapping(address => uint256) public betsPlayer1;
   mapping(address => uint256) public betsPlayer2;
@@ -315,9 +316,9 @@ contract Bet is usingOraclize, Ownable {
   }
 
 
-  // when match is FINISHED the first time: 217752, 217688, 217752
-  // retrieve goals: 73985, 219830, 73751, 227547, 73687, 227547, 73751, 227547
-  // retrieve penalty goals: 43985, 56282, 43751, 56516, 43751, 56516
+  // when match is FINISHED the first time: 212461
+  // retrieve goals: 73773, 229709 (paid 2x 0.0003877 fee)
+  // retrieve penalty goals: 43773, 56538
   function __callback(bytes32 myid, string response) public
       onlyOraclize
       isNotWinnerSuggested
@@ -401,7 +402,7 @@ contract Bet is usingOraclize, Ownable {
       }
   }
 
-  // gas: 106396
+  // gas: 106286
   // WHEN already confirmed (fail): 24450
   function confirmWinner(uint8 _winnerAsInt) external
       onlyOwner
@@ -422,6 +423,7 @@ contract Bet is usingOraclize, Ownable {
               uint256 feeAmount = pool.mul(FEE_PERCENT).div(100);
               feeEarning = feeAmount;
               payoutPool = pool.sub(feeAmount);
+              remainingPayoutPool = payoutPool;
               owner.transfer(feeAmount);
           } else {
               payoutPool = 0;
@@ -444,7 +446,8 @@ contract Bet is usingOraclize, Ownable {
       emit BettingCancelled(p1, p2);
   }
 
-  // KOVAN start fetch (enough gas): 142162, 142162, 142162, 142390
+  // KOVAN start fetch (enough gas): 142302
+  // kOVAN fee transfered to oraclize: 0.0013777
   // KOVAN claim success: 90976, 45976
   function claimWinOrDraw() external
       isNotCancelled
@@ -471,8 +474,8 @@ contract Bet is usingOraclize, Ownable {
           revert();
       }
 
-      require(payoutPool >= payout);
-      payoutPool = payoutPool.sub(payout);
+      require(remainingPayoutPool >= payout);
+      remainingPayoutPool = remainingPayoutPool.sub(payout);
 
       msg.sender.transfer(payout);
   }
@@ -486,8 +489,8 @@ contract Bet is usingOraclize, Ownable {
       betsPlayer1[msg.sender] = 0;
       betsPlayer2[msg.sender] = 0;
 
-      require(payoutPool >= refund);
-      payoutPool = payoutPool.sub(refund);
+      require(remainingPayoutPool >= refund);
+      remainingPayoutPool = remainingPayoutPool.sub(refund);
       
       msg.sender.transfer(refund);
   }

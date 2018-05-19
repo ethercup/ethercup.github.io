@@ -1,28 +1,24 @@
 <template>
   <li class="bet">
-    <h2>{{ bet.id }}</h2>
+    <h2>{{ matchId }}</h2>
 
-    matchId: {{ bet.matchId }}<br>
-    status: {{ bet.status }}<br>
-    group: {{ bet.group }}<br>
-    isGroupPhase: {{ bet.isGroupPhase }}<br>
-    p1: {{ bet.p1 }}<br>
-    p2: {{ bet.p2 }}<br>
-    timeBettingOpens: {{ bet.timeBettingOpens }}<br>
-    timeBettingCloses: {{ bet.timeBettingCloses }}<br>
-    matchFinished: {{ bet.matchFinished }}<br>
-    timeClaimsExpire: {{ bet.timeClaimsExpire }}<br>
-    timeSuggestConfirmEnds: {{ bet.timeSuggestConfirmEnds }}<br>
-    winnerSuggested: {{ bet.winnerSuggested }}<br>
-    winnerConfirmed: {{ bet.winnerConfirmed }}<br>
-    winner: {{ bet.winner }}<br>
-    totalPlayer1: {{ bet.totalPlayer1 }}<br>
-    totalPlayer2: {{ bet.totalPlayer2 }}<br>
-    numBetsPlayer1: {{ bet.numBetsPlayer1 }}<br>
-    numBetsPlayer2: {{ bet.numBetsPlayer2 }}<br>
-  
- 
-
+    matchId: {{ matchId }}<br>
+    status: {{ status }}<br>
+    group: {{ group }}<br>
+    p1: {{ p1 }}<br>
+    p2: {{ p2 }}<br>
+    <!--timeBettingOpens: {{ timeBettingOpens }}<br>
+    timeBettingCloses: {{ timeBettingCloses }}<br>
+    matchFinished: {{ matchFinished }}<br>
+    timeClaimsExpire: {{ timeClaimsExpire }}<br>
+    timeSuggestConfirmEnds: {{ timeSuggestConfirmEnds }}<br>
+    winnerSuggested: {{ isWinnerConfirmed }}<br>
+    winner: {{ winner }}<br>
+    totalPlayer1: {{ totalPlayer1 }}<br>
+    totalPlayer2: {{ totalPlayer2 }}<br>
+    numBetsPlayer1: {{ numBetsPlayer1 }}<br>
+    numBetsPlayer2: {{ numBetsPlayer2 }}<br> 
+-->
     <button v-on:click="placeBet($index)">Bet!</button>
   </li>
 </template>
@@ -34,45 +30,126 @@
 
 export default {
   name: 'Bets',
-  props: ['bet'],
-  // data () {
-  //   return {
-  //     id: 0,
-  //     apiId: '111'
-  //   }
-  // }
-  computed: { // will be cached, only changed when base variable changes
-    myBetsP1: function () {
-      return web.instance.betsPlayer1(address) // only run once, will never update
-    },
-    myBetsP2: function () {
-      return web.instance.betsPlayer2(address) // only run once, will never update
-    },
-    timeBettingOpens: function() {
-      return 0;//human readable format of this.bet.timeBettingOpens
-    },
-    timeBettingCloses: function() {
-      return 0;//human readable format of this.bet.timeBettingCloses
-    },
-    timeSuggestConfirmEnds: function() {
-      return 0;//human readable format of this.bet.timeSuggestConfirmEnds
-    },
-    timeClaimsExpire: function() {
-      return 0;//human readable format of this.bet.timeClaimsExpire
-    },
-    winner: function () {
-      if (bet.winnerConfirmed) {
-        return bet.winner == 1 ? bet.p1 : bet.winner == 2 ? bet.p2 : "Draw";
+  props: ['web3', 'betRegistry', 'betContract', 'matchId', 'account', 'balance'],
+  data () {
+    return {
+      instance: null,
+      betAddress: null,
+      status: 0,
+      group: '',
+      p1: '',
+      p2: ''
+    }
+  },
+  computed: {
+    group: async function () {
+      isGroupPhase = await this.instance.isGroupPhase.call()
+      if(isGroupPhase) {
+        return await this.instance.group.call()
       }
+    },
+    p1: async function() {
+      return await this.instance.p1.call()
+    },
+    p2: async function() {
+      return await this.instance.p2.call()
+    },
+    matchFinished: async function() {
+      return await this.instance.matchFinished.call()
+    },
+    myBetsP1: async function () {
+      return await this.instance.betsPlayer1(this.account)
+    },
+    myBetsP2: async function () {
+      return await this.instance.betsPlayer2(this.account)
+    },
+    totalPlayer1: async function () {
+      return await this.instance.totalPlayer1.call()
+    },
+    totalPlayer2: async function () {
+      return await this.instance.totalPlayer2.call()
+    },
+    numBetsPlayer1: async function () {
+      return await this.instance.numBetsPlayer1.call()
+    },
+    numBetsPlayer2: async function () {
+      return await this.instance.numBetsPlayer2.call()
+    },
+    timeBettingOpens: async function() {
+      var date = new Date(await this.instance.timeBettingOpens.call() * 1000)
+      return this.getReadableDate(date)
+    },
+    timeBettingCloses: async function() {
+      var date = new Date(await this.instance.timeBettingCloses.call() * 1000)
+      return this.getReadableDate(date)
+    },
+    timeSuggestConfirmEnds: async function() {
+      var date = new Date(await this.instance.timeSuggestConfirmEnds.call() * 1000)
+      return this.getReadableDate(date)
+    },
+    timeClaimsExpire: async function() {
+      var date = new Date(await this.instance.timeClaimsExpire.call() * 1000)
+      return this.getReadableDate(date)
     }
   },
   methods: { // not cached. Run every time the method is called
     // a method invocation will always run the function whenever a re-render happens.
-    placeBet: function () {
+    async getWinner () {
+      var winner = await this.instance.winner.call()
+      var isWinnerConfirmed = await this.instance.winnerConfirmed.call()
+      if (isWinnerConfirmed) {
+        this.winner = winner; //
+      }
+    },
+    placeBet () {
       this.answer = 'Thinking...' // Intermediate erponse
       var result = web3.contract.placeBetOnPlayer1();
       this.answer = result.result;
+    },
+    getAddressAndInstance () {
+      var that = this
+      return new Promise(function(resolve, reject) {
+        that.betRegistry.betContracts.call(that.matchId).then(addr => {
+          that.betAddress = addr
+          that.instance = that.betContract.at(addr);
+          //console.log(this.instance)
+          resolve()
+        });
+      });
+    },
+    getReadableDate (date) {
+      return date.getFullYear() + "-" + date.getMonth()+1 + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
+    },
+    getStatus: function () {
+      this.instance.status.call().then(s => {
+        this.status = Number(s)
+      })
+    },
+    getGroup: function () {
+      this.instance.group.call().then(s => {
+        this.group = s
+      })
+    },
+    getP1: function () {
+      this.instance.p1.call().then(s => {
+        this.p1 = s
+      })
+    },
+    getP2: function () {
+      this.instance.p2.call().then(s => {
+        this.p2 = s
+      })
     }
+  },
+  created () {
+    var that = this
+    this.getAddressAndInstance().then(function() {
+      that.getStatus()
+      that.getGroup()
+      that.getP1()
+      that.getP2()
+    })
+    
   },
   watch: { // listen for changes on variables in 'data'. Usually a computed-propery is favorable
     firstName: function (val) {

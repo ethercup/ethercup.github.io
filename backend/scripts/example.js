@@ -46,8 +46,9 @@ async function main() {
   // }
 
   const migrationsAddress = '0x9866102e9ee2c5d668bf70c8f50647fb725e4b0c'
-  const betRegistry = '0xd344a3f84d5c1fe59d39cc61b386e760f97f75ff'
-  const betAddress = '0x77ada3b6e85b7eb6b5f8f51cf958a62aabded2fa'
+
+  const betRegistryAddress = '0xb09e08f2d8ba53ff54c464f7ec1135a92faea937'
+  const betAddress = '0x2b2109ff25d7e6d63732e1e1da7b1e10ec0ce311'
 
   const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9'.toLowerCase() //acc1
   const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca'.toLowerCase() //acc2
@@ -61,14 +62,21 @@ async function main() {
   
   
   var contract = require("truffle-contract")
+
   var jsonBlob = require('../build/contracts/Bet.json')
+  var jsonBlobReg = require('../build/contracts/BetRegistry.json')
   var betContract = contract(jsonBlob)
+  var betRegistryContract = contract(jsonBlobReg)
   betContract.setProvider(provider)
+  betRegistryContract.setProvider(provider)
   betContract.defaults({
     gasPrice: 6e9,
   })
+  betRegistryContract.defaults({
+    gasPrice: 6e9,
+  })
   fixTruffleContractCompatibilityIssue(betContract) // workaround. see https://github.com/trufflesuite/truffle-contract/issues/57
-
+  fixTruffleContractCompatibilityIssue(betRegistryContract)
 
   // const promisify = (inner) =>
   //   new Promise((resolve, reject) =>
@@ -81,10 +89,13 @@ async function main() {
   // oralice_getprice: 1827700000000000, 1347700000000000
   
   var bet = betContract.at(betAddress)
+  var betRegistry = betRegistryContract.at(betRegistryAddress)
 
-  console.log(await bet.betOnPlayer1({from: owner, value: 0.5*tenthEther}))
-  console.log(await bet.betOnPlayer2({from: user1, value: 0.2*tenthEther})) //--> gets 0.0396
-  console.log(await bet.betOnPlayer2({from: user2, value: 0.3*tenthEther})) //--> gets 0.03564
+  //await betRegistry.addBet(betAddress, {from: owner});
+
+  //console.log(await bet.betOnPlayer1({from: owner, value: 0.5*tenthEther}))
+  //console.log(await bet.betOnPlayer2({from: user1, value: 0.2*tenthEther})) //--> gets 0.0396
+  //console.log(await bet.betOnPlayer2({from: user2, value: 0.3*tenthEther})) //--> gets 0.03564
 
   //console.log(await bet.claimWinOrDraw({from: user2}))
   //console.log(await bet.cancel({from: user1}))
@@ -94,8 +105,9 @@ async function main() {
   //console.log(await bet.confirmWinner(2, {from: owner}))
   
   //bet.claimWinOrDraw({from: owner})
+  console.log("BetRegistry nextIndex: " + await betRegistry.nextIndex.call())
 
-  console.log("STATUS: " + await bet.status.call())  
+  console.log("\nSTATUS: " + await bet.status.call())  
 
   console.log("\n---BETs---")
   console.log("betsPlayer1: " + await bet.betsPlayer1.call(owner))
@@ -130,6 +142,7 @@ async function main() {
   console.log("winnerConfirmed: " + await bet.winnerConfirmed.call())
   console.log("pool: " + await bet.pool.call())
   console.log("payoutPool: " + await bet.payoutPool.call())
+  console.log("remainingPayoutPool: " + await bet.remainingPayoutPool.call())
   console.log("feeEarning: " + await bet.feeEarning.call())
 
   // console.log('before bet')

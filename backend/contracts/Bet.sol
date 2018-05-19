@@ -40,7 +40,10 @@ contract Bet is usingOraclize, Ownable {
   uint256 private constant GAS_LIMIT_MATCHSTATUS = 225000; // works: 300000
   uint256 private constant GAS_LIMIT_GOALS = 240000; // works: 300000
   uint256 private constant GAS_LIMIT_GOALS_PENALTY = 60000; // works: 300000
-  uint256 private constant MAX_FETCH_ATTEMPTS = 12; // currently 0.8-1.2 USD per fetch
+  // Best case (api has result after match ends): Min 3 fetches, max 5 fetches.
+  // Add a buffer of 4 fetches (4 hours since 1 fetch/h)
+  // --> 9 fetches max. Can be reset when refunded (see fundFetching())
+  uint256 private constant MAX_FETCH_ATTEMPTS = 9; // One fetch costs around 0.8-1.2 USD
   uint256 private constant FETCH_INTERVAL = 60*60; // 60min in seconds
   string private URL;
   uint256 public fetchAttempt;
@@ -65,7 +68,7 @@ contract Bet is usingOraclize, Ownable {
 
   uint256 public pool;
   uint256 public payoutPool;
-  uint256 private remainingPayoutPool;
+  uint256 public remainingPayoutPool;
   uint256 public feeEarning;
   mapping(address => uint256) public betsPlayer1;
   mapping(address => uint256) public betsPlayer2;
@@ -237,7 +240,7 @@ contract Bet is usingOraclize, Ownable {
       timeBettingCloses = _matchStart - 900 seconds;
       timeBettingOpens = _matchStart - _durationBetting;
       timeMatchEnds = timeBettingCloses + 105 minutes;
-      timeFetchStarts = timeMatchEnds + 15 minutes;
+      timeFetchStarts = timeMatchEnds + 30 minutes;
       timeSuggestConfirmEnds = timeMatchEnds + _durationSuggestConfirm;
       timeClaimsExpire = timeSuggestConfirmEnds + 8 weeks;
   }
@@ -317,6 +320,7 @@ contract Bet is usingOraclize, Ownable {
 
 
   // when match is FINISHED the first time: 212461
+  // when match is IN_PLAY: 102053
   // retrieve goals: 73773, 229709 (paid 2x 0.0003877 fee)
   // retrieve penalty goals: 43773, 56538
   function __callback(bytes32 myid, string response) public
@@ -402,7 +406,7 @@ contract Bet is usingOraclize, Ownable {
       }
   }
 
-  // gas: 106286
+  // gas: 106286, 126500
   // WHEN already confirmed (fail): 24450
   function confirmWinner(uint8 _winnerAsInt) external
       onlyOwner
@@ -448,7 +452,7 @@ contract Bet is usingOraclize, Ownable {
 
   // KOVAN start fetch (enough gas): 142302
   // kOVAN fee transfered to oraclize: 0.0013777
-  // KOVAN claim success: 90976, 45976
+  // KOVAN claim success: 90976, 45976, 29300, 22150
   function claimWinOrDraw() external
       isNotCancelled
       canStartFetch
@@ -509,6 +513,12 @@ contract Bet is usingOraclize, Ownable {
       isNotWinnerSuggested
       isSuggestConfirmPhase
   {
+      // Fund must be substantial because we reset fetchAttempts.
+      // Contract balance can be drained if fetchAttempt is reset
+      // every time this function is called, when the fetches
+      // 0->MAX_FETCH_ATTEMPTS cost more than funded `msg.value`.
+      require(msg.value >= 1e16); // 1/100 ether = ~7 dollar
+      fetchAttempt = 0;
       fetchMatchStatus(0);
   }
 

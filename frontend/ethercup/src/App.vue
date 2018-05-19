@@ -3,13 +3,17 @@
     <img src="./assets/logo.png">
     {{ this.account }}<br>
     {{ this.balance }}
-    <Bets/>
+    <Bets
+        v-bind:web3="web3"
+        v-bind:provider="provider"
+        v-bind:account="account"
+        v-bind:balance="balance"
+    />
   </div>
 </template>
 
 <script>
 import Web3 from 'web3'
-import TruffleContract from 'truffle-contract'
 import Bets from './components/Bets'
 
 export default {
@@ -22,14 +26,12 @@ export default {
       web3: null,
       provider: null,
       network: 0,
-      betRegistry: null,
-      bets: [],
       account: '',
       accountRefresh: null,
       balance: 0,
     }
   },
-  mounted () {
+  created () {
     this.initWeb3()
     this.updateNetworkAndAccount()
     this.networkCheck()
@@ -43,48 +45,41 @@ export default {
       if (web3) {
         // Use Mist/MetaMask's provider
         this.provider = web3.currentProvider
-        web3 = new Web3(this.provider)
-        
-        var betRegistryArtifact = require('../../../backend/build/contracts/BetRegistry.json')
-        var betRegistryContract = TruffleContract(betRegistryArtifact)
-        betRegistryContract.setProvider(this.provider)
-        this.betRegistry = betRegistryContract.at('0xbff77919292f804dbd4c5c072ccdd31858de44fa')
-
-        var betArtifact = require('../../../backend/build/contracts/Bet.json')
-        var betContract = TruffleContract(betArtifact)
-        betContract.setProvider(this.provider)
-        this.bets[0] = betContract.at('0x77ada3b6e85b7eb6b5f8f51cf958a62aabded2fa')
-      
+        this.web3 = new Web3(this.provider)
       }
     },
     updateBalance () {
-      web3.eth.getBalance(this.account).then(b => {
-        this.balance = Number(web3.utils.fromWei(b))
+      this.web3.eth.getBalance(this.account).then(b => {
+        this.balance = Number(this.web3.utils.fromWei(b))
+      })
+    },
+    getAccount() {
+      this.web3.eth.getAccounts().then(acc => {
+        if (acc[0] != this.account) {
+          this.account = acc[0]
+          this.updateBalance()
+        }
+      })
+    },
+    getNetwork () {
+      this.web3.eth.net.getId().then(n => {
+        if (n != this.network) {
+          this.network = n
+          if (this.account != '') {
+            this.updateBalance()  
+          }
+        }
       })
     },
     updateNetworkAndAccount () {
-      web3.eth.getAccounts().then(acc => this.account = acc[0])
-      web3.eth.getAccounts().then(acc => console.log)
-      
       var that = this
       this.accountInterval = setInterval(function() {
-        web3.eth.getAccounts().then(acc => {
-          if (acc[0] !== that.account) {
-            that.account = acc[0]
-            that.updateBalance()
-          }
-        })
-        web3.eth.net.getId().then(n => {
-          if (Number(n) !== that.network) {
-            that.network = Number(n)
-            that.updateBalance()
-          }
-        })
+        that.getAccount()
+        that.getNetwork()
       }, 200);
     },
     networkCheck () {
-      web3.eth.net.getId(function (err, netId) {
-        console.log(netId)
+      this.web3.eth.net.getId(function (err, netId) {
         if (err) {
           console.log(err)
           return

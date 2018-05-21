@@ -7,19 +7,72 @@
     group: {{ group }}<br>
     p1: {{ p1 }}<br>
     p2: {{ p2 }}<br>
-    <!--timeBettingOpens: {{ timeBettingOpens }}<br>
-    timeBettingCloses: {{ timeBettingCloses }}<br>
+
+
+    <!-- The order of these if checks is important, as each check is narrowing down the bet's status further -->
+    <div v-if="isCancelled">
+      Cancelled
+    </div>
+    <div v-else-if="isInactive">
+      isInactive
+    </div>
+    <div v-else-if="isClaimExpired">
+      isClaimExpired
+    </div>
+    <div v-else-if="isBettingOpen">
+      isBettingOpen
+    </div>
+    <div v-else-if="isBettingClosed">
+      isBettingClosed
+    </div>
+    <div v-else-if="isPayout">
+      isPayout
+    </div>
+    <div v-else-if="isWaitingForConfirm">
+      isWaitingForConfirm
+    </div>
+    <div v-else-if="isPlayingForSure">
+      isPlayingForSure
+    </div>
+    <div v-else-if="isFetching">
+      isFetching
+    </div>
+    <div v-else-if="isShouldStartFetch">
+      isShouldStartFetch
+    </div>
+    <div v-else>
+      UNKNOWN PHASE/STATUS. Please contact admin
+    </div>
+
     matchFinished: {{ matchFinished }}<br>
-    timeClaimsExpire: {{ timeClaimsExpire }}<br>
-    timeSuggestConfirmEnds: {{ timeSuggestConfirmEnds }}<br>
-    winnerSuggested: {{ isWinnerConfirmed }}<br>
-    winner: {{ winner }}<br>
-    totalPlayer1: {{ totalPlayer1 }}<br>
-    totalPlayer2: {{ totalPlayer2 }}<br>
+    myBetsP1: {{ toEther(myBetsP1) }} {{ unit }}<br>
+    myBetsP2: {{ toEther(myBetsP2) }}<br>
+    timeBettingOpens: {{ getReadableDate(timeBettingOpens) }}<br>
+    timeBettingCloses: {{ getReadableDate(timeBettingCloses) }}<br>
+    timeMatchStarts: {{ getReadableDate(timeMatchStarts) }}<br>
+    timeSuggestConfirmEnds: {{ getReadableDate(timeSuggestConfirmEnds) }}<br>
+    timeClaimsExpire: {{ getReadableDate(timeClaimsExpire) }}<br>
+    totalPlayer1: {{ toEther(totalPlayer1) }} {{ unit }}<br>
+    totalPlayer2: {{ toEther(totalPlayer2) }} {{ unit }}<br>
     numBetsPlayer1: {{ numBetsPlayer1 }}<br>
     numBetsPlayer2: {{ numBetsPlayer2 }}<br> 
--->
-    <button v-on:click="placeBet($index)">Bet!</button>
+
+
+    winner: {{ winner }}<br>
+    isWinnerConfirmed: {{ isWinnerConfirmed }}<br>
+    isFetchingStarted: {{ isFetchingStarted }}<br>
+
+    <input type="radio" id="p1" v-bind:value="p1" v-model="betTeam">
+    <label for="p1">{{ p1 }}</label>
+    <br>
+    <input type="radio" id="p2" v-bind:value="p2" v-model="betTeam">
+    <label for="p2">{{ p2 }}</label>
+    <br>
+    <span>Picked: {{ betTeam }}</span><br>
+
+    <input v-model="betAmount" type="number" step="0.1" placeholder="in ETH">
+    <button v-on:click="placeBet()">Bet!</button>
+    {{ result }}
   </li>
 </template>
 
@@ -27,6 +80,14 @@
 
 
 <script>
+
+const monthNames = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+const DEFAULT_GAS = 150000
+const BET_GAS = 90000
+const DEFAULT_GAS_PRICE = 6e9
 
 export default {
   name: 'Bets',
@@ -38,76 +99,168 @@ export default {
       status: 0,
       group: '',
       p1: '',
-      p2: ''
+      p2: '',
+      isFetchingStarted: false,
+      matchFinished: false,
+      isWinnerConfirmed: false,
+      myBetsP1: '',
+      myBetsP2: '',
+      totalPlayer1: '',
+      totalPlayer2: '',
+      numBetsPlayer1: 0,
+      numBetsPlayer2: 0,
+      timeBettingOpens: 0,
+      timeBettingCloses: 0,
+      timeSuggestConfirmEnds: 0,
+      timeClaimsExpire: 0,
+      rawWinner: 0, // 1 == p1, 2 == p2, 3 == draw
+
+      betTeam: '',
+      betAmount: '',
+      result: '',
     }
   },
   computed: {
-    group: async function () {
-      isGroupPhase = await this.instance.isGroupPhase.call()
-      if(isGroupPhase) {
-        return await this.instance.group.call()
+    unit: function () {
+      return 'ETH'
+    },
+    getNow () {
+      return (new Date().getTime() / 1000).toFixed(0);
+    },
+
+    timeMatchStarts: function() {
+      return this.timeBettingCloses + 15*60
+    },
+    timeMatchEndsEarliest: function() {
+      return this.timeMatchStarts + 105*60
+    },
+    isCancelled: function() {
+      return this.status == "0"
+    },
+    isInactive: function () {
+      console.log("call to isInactive")
+      return this.getNow < this.timeBettingOpens
+    },
+    isClaimExpired: function() {
+      console.log("call to isClaimExpired")
+      return this.getNow > this.timeClaimsExpire
+    },
+    isBettingOpen: function () {
+      console.log("call to isBettingOpen")
+      return this.getNow >= this.timeBettingCloses && this.getNow < this.timeBettingCloses
+    },
+    isBettingClosed: function () {
+      console.log("call to isBettingClosed")
+      return this.getNow >= this.timeBettingCloses && this.getNow < this.timeMatchStarts
+    },
+    isPayout: function () {
+      console.log("call to isPayout")
+      return this.matchFinished == true && this.isWinnerConfirmed() == true// && this.getNow < this.timeClaimsExpire
+    },
+    isWaitingForConfirm: function () {
+      console.log("call to isWaitingForConfirm")
+      return this.matchFinished == true && this.isWinnerConfirmed() == false && this.getNow < this.timeSuggestConfirmEnds
+    },
+    isPlayingForSure: function () {
+      console.log("call to isPlayingForSure")
+      return this.getNow >= this.timeMatchStarts && this.getNow <= this.timeMatchEndsEarliest
+    },
+    isFetching: function () {
+      console.log("call to isFetching")
+      return this.isFetchingStarted == true
+    },
+    isShouldStartFetch: function () {
+      console.log("call to isShouldStartFetch")
+      return this.isFetchingStarted == false && this.getNow > this.timeMatchEndsEarliest
+    },
+    winner: function() {
+      if (this.rawWinner == 1) {
+        return p1
+      } else if (this.rawWinner == 2) {
+        return p2
+      } else if (this.rawWinner == 3) {
+        return 'DRAW!'
+      } else {
+        return 'Undecided'
       }
-    },
-    p1: async function() {
-      return await this.instance.p1.call()
-    },
-    p2: async function() {
-      return await this.instance.p2.call()
-    },
-    matchFinished: async function() {
-      return await this.instance.matchFinished.call()
-    },
-    myBetsP1: async function () {
-      return await this.instance.betsPlayer1(this.account)
-    },
-    myBetsP2: async function () {
-      return await this.instance.betsPlayer2(this.account)
-    },
-    totalPlayer1: async function () {
-      return await this.instance.totalPlayer1.call()
-    },
-    totalPlayer2: async function () {
-      return await this.instance.totalPlayer2.call()
-    },
-    numBetsPlayer1: async function () {
-      return await this.instance.numBetsPlayer1.call()
-    },
-    numBetsPlayer2: async function () {
-      return await this.instance.numBetsPlayer2.call()
-    },
-    timeBettingOpens: async function() {
-      var date = new Date(await this.instance.timeBettingOpens.call() * 1000)
-      return this.getReadableDate(date)
-    },
-    timeBettingCloses: async function() {
-      var date = new Date(await this.instance.timeBettingCloses.call() * 1000)
-      return this.getReadableDate(date)
-    },
-    timeSuggestConfirmEnds: async function() {
-      var date = new Date(await this.instance.timeSuggestConfirmEnds.call() * 1000)
-      return this.getReadableDate(date)
-    },
-    timeClaimsExpire: async function() {
-      var date = new Date(await this.instance.timeClaimsExpire.call() * 1000)
-      return this.getReadableDate(date)
     }
   },
-  methods: { // not cached. Run every time the method is called
-    // a method invocation will always run the function whenever a re-render happens.
-    async getWinner () {
-      var winner = await this.instance.winner.call()
-      var isWinnerConfirmed = await this.instance.winnerConfirmed.call()
-      if (isWinnerConfirmed) {
-        this.winner = winner; //
+  methods: {
+    getContractState: async function() {
+      this.getStatus()
+      this.getGroup()
+      this.getP1()
+      this.getP2()
+      this.getMatchFinished()
+      this.getMyBetsP1()
+      this.getMyBetsP2()
+      this.getTotalPlayer1()
+      this.getTotalPlayer2()
+      this.getNumBetsPlayer1()
+      this.getNumBetsPlayer2()
+      this.getTimeBettingOpens()
+      this.getTimeBettingCloses()
+      this.getTimeSuggestConfirmEnds()
+      this.getTimeClaimsExpire()
+      this.getIsFetchingStarted()
+      this.getWinner()
+    },
+    
+    toEther (weiString) {
+      return Number(this.web3.utils.fromWei(weiString))
+    },
+    placeBet: async function() {
+      this.result = 'Processing...' // Intermediate erponse
+
+      let wei
+      try {
+        wei = this.validatePlaceBet(this.betTeam, this.betAmount)
+      } catch (err) {
+        this.result = 'Invalid input'
+        return
+      }
+
+      if (this.betTeam == this.p1) {
+        this.instance.betOnPlayer1({
+          from: this.account,
+          gas: BET_GAS,
+          value: wei
+        })
+        .then(r => {
+          this.result = 'Success! (Tx hash: ' + r.tx + ')'
+        })
+        .catch(err => {
+          this.result = 'Transaction failed.'
+        })  
+      } else if (this.betTeam == this.p2) {
+        this.instance.betOnPlayer2({
+          from: this.account,
+          gas: BET_GAS,
+          value: wei
+        })
+        .then(r => {
+          this.result = 'Success! (Tx hash: ' + r.tx + ')'
+        })
+        .catch(err => {
+          this.result = 'Transaction failed.'
+        })  
       }
     },
-    placeBet () {
-      this.answer = 'Thinking...' // Intermediate erponse
-      var result = web3.contract.placeBetOnPlayer1();
-      this.answer = result.result;
+    validatePlaceBet(team, ether) {
+      let wei = this.web3.utils.toWei(ether)
+
+      if ((team == this.p1 || team == this.p2) && wei !== '0') {
+        return wei
+      } else {
+        throw "select a team or bet more than 0"
+      }
     },
     getAddressAndInstance () {
       var that = this
+      this.betContract.defaults({
+        gas: DEFAULT_GAS,
+        gasPrice: DEFAULT_GAS_PRICE
+      })
       return new Promise(function(resolve, reject) {
         that.betRegistry.betContracts.call(that.matchId).then(addr => {
           that.betAddress = addr
@@ -117,17 +270,18 @@ export default {
         });
       });
     },
-    getReadableDate (date) {
-      return date.getFullYear() + "-" + date.getMonth()+1 + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
+    getGroup: function () {
+      this.instance.isGroupPhase.call().then(isGroupPhase => {
+        if(isGroupPhase) {
+          this.instance.group.call().then(g => {
+            this.group = g
+          })  
+        }  
+      })
     },
     getStatus: function () {
       this.instance.status.call().then(s => {
-        this.status = Number(s)
-      })
-    },
-    getGroup: function () {
-      this.instance.group.call().then(s => {
-        this.group = s
+        this.status = s
       })
     },
     getP1: function () {
@@ -139,15 +293,66 @@ export default {
       this.instance.p2.call().then(s => {
         this.p2 = s
       })
+    },
+    getMatchFinished: function() {
+      this.instance.matchFinished.call().then(matchFinished => {
+        this.matchFinished = matchFinished
+      })
+    },
+    getMyBetsP1: async function () {
+      this.myBetsP1 = (await this.instance.betsPlayer1.call(this.account)).toString()
+    },
+    getMyBetsP2: async function () {
+      this.myBetsP2 = (await this.instance.betsPlayer2.call(this.account)).toString()
+    },
+    getTotalPlayer1: async function () {
+      this.totalPlayer1 = (await this.instance.totalPlayer1.call()).toString()
+    },
+    getTotalPlayer2: async function () {
+      this.totalPlayer2 = (await this.instance.totalPlayer2.call()).toString()
+    },
+    getNumBetsPlayer1: async function () {
+      this.numBetsPlayer1 = Number(await this.instance.numBetsPlayer1.call())
+    },
+    getNumBetsPlayer2: async function () {
+      this.numBetsPlayer2 = Number(await this.instance.numBetsPlayer2.call())
+    },
+    getTimeBettingOpens: async function () {
+      this.timeBettingOpens = Number(await this.instance.timeBettingOpens.call())
+    },
+    getTimeBettingCloses: async function() {
+      this.timeBettingCloses = Number(await this.instance.timeBettingCloses.call())
+    },
+    getTimeSuggestConfirmEnds: async function() {
+      this.timeSuggestConfirmEnds = Number(await this.instance.timeSuggestConfirmEnds.call())
+    },
+    getTimeClaimsExpire: async function() {
+      this.timeClaimsExpire = Number(await this.instance.timeClaimsExpire.call())
+    },
+    getIsWinnerConfirmed: async function() {
+      this.isWinnerConfirmed = await this.instance.winnerConfirmed.call()
+    },
+    getWinner: async function() {
+      await this.getIsWinnerConfirmed()
+      if(this.isWinnerConfirmed) {
+        this.instance.winner.call().then(winner => {
+          console.log("Winner: " + winner)
+          this.rawWinner = winner;  
+        }) 
+      }
+    },
+    getIsFetchingStarted: async function() {
+      this.isFetchingStarted = await this.instance.isFetchingStarted.call()
+    },
+    getReadableDate: function(timestamp) {
+      var date = new Date(timestamp*1000)
+      return date.getDate() + " " + monthNames[date.getMonth()] + " " + date.getFullYear() + ", " + date.getHours() + ":" + ('0' + date.getMinutes()).slice(-2);
     }
   },
   created () {
     var that = this
     this.getAddressAndInstance().then(function() {
-      that.getStatus()
-      that.getGroup()
-      that.getP1()
-      that.getP2()
+      that.getContractState()
     })
     
   },
@@ -179,7 +384,7 @@ li {
   margin: 0 10px;
 }
 a {
-  color: #42b983;
+  color
+  : #42b983;
 }
-
 </style>

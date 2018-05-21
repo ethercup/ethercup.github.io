@@ -11,7 +11,7 @@ contract Bet is usingOraclize, Ownable {
   enum Winner { Undecided, Player1, Player2, Draw }
 
   uint8 private constant FEE_PERCENT = 1;
-  uint256 private constant MIN_SUGGESTCONFIRM_DURATION = 2 hours;
+  uint256 private constant MIN_SUGGESTCONFIRM_DURATION = 6 hours;
   uint256 private constant CLAIM_EXPIRES_AFTER = 8 weeks;
   uint8 private constant MAX_GOALS = 25;
 
@@ -241,7 +241,7 @@ contract Bet is usingOraclize, Ownable {
       timeBettingOpens = _matchStart - _durationBetting;
       timeMatchEnds = timeBettingCloses + 105 minutes;
       timeFetchStarts = timeMatchEnds + 30 minutes;
-      timeSuggestConfirmEnds = timeMatchEnds + _durationSuggestConfirm;
+      timeSuggestConfirmEnds = _matchStart + _durationSuggestConfirm;
       timeClaimsExpire = timeSuggestConfirmEnds + 8 weeks;
   }
 

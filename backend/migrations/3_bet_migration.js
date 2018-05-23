@@ -16,7 +16,7 @@ module.exports = function(deployer, network, accounts) {
   	'165069',
     'A',
   	'Germany',
-  	'Russia',
+  	'Saudi Arabia',
   	true,
   	1526745600,
   	3600*24*7,

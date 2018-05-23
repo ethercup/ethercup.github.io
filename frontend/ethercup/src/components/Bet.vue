@@ -1,118 +1,189 @@
 <template>
-  <li class="bet">
-    <h2>{{ matchId }}</h2>
+  <li class="bet container" style="border: 1px solid #bbb">
+    <div class="row" style="text-align:left; color: #bbb">
+        Bet Status: {{ status }}<br>
+        Match #{{ matchId+1 }}, Group {{ group }}
+    </div>
 
-    matchId: {{ matchId }}<br>
-    status: {{ status }}<br>
-    group: {{ group }}<br>
-    p1: {{ p1 }}<br>
-    p2: {{ p2 }}<br>
+    <div class="row">
+      <div class="five columns">
+        <h5>{{ p1 }}</h5>
+      </div>
+      <div class="two columns">&nbsp;</div>
+      <div class="five columns">
+        <h5>{{ p2 }}</h5>
+      </div>
+    </div>
+    <div class="row">
+      <div class="five columns">
+        <img class="flag u-max-full-width" v-bind:src="require(`@/assets/teams/${p1}.png`)">
+      </div>
+      <div class="two columns vs">
+        VS
+      </div>
+      <div class="five columns">
+        <img class="flag u-max-full-width" v-bind:src="require(`@/assets/teams/${p2}.png`)">
+      </div>
+    </div>
 
-
-    <!-- The order of these if checks is important, as each check is narrowing down the bet's status further -->
-    <div v-if="isCancelled">
-      Cancelled
-    </div>
-    <div v-else-if="isInactive">
-      isInactive<br>
-      timeBettingOpens: {{ getReadableDate(timeBettingOpens) }}<br>
-    </div>
-    <div v-else-if="isClaimExpired">
-      isClaimExpired<br>
-      winner: {{ winner }}<br>
-    </div>
-    <div v-else-if="isBettingOpen">
-      isBettingOpen<br>
-      timeBettingCloses: {{ getReadableDate(timeBettingCloses) }}<br>
-      timeMatchStarts: {{ getReadableDate(timeMatchStarts) }}<br>
-      totalPlayer1: {{ toEther(totalPlayer1) }} {{ unit }}<br>
-      totalPlayer2: {{ toEther(totalPlayer2) }} {{ unit }}<br>
-      numBetsPlayer1: {{ numBetsPlayer1 }}<br>
-      numBetsPlayer2: {{ numBetsPlayer2 }}<br> 
-    </div>
-    <div v-else-if="isBettingClosed">
-      isBettingClosed<br>
-      myBetsP1: {{ toEther(myBetsP1) }} {{ unit }}<br>
-      myBetsP2: {{ toEther(myBetsP2) }}<br>
-      totalPlayer1: {{ toEther(totalPlayer1) }} {{ unit }}<br>
-      totalPlayer2: {{ toEther(totalPlayer2) }} {{ unit }}<br>
-      numBetsPlayer1: {{ numBetsPlayer1 }}<br>
-      numBetsPlayer2: {{ numBetsPlayer2 }}<br> 
-    </div>
-    <div v-else-if="isPayout">
-      isPayout<br>
-      myBetsP1: {{ toEther(myBetsP1) }} {{ unit }}<br>
-      myBetsP2: {{ toEther(myBetsP2) }}<br>
-      timeClaimsExpire: {{ getReadableDate(timeClaimsExpire) }}<br>
-      totalPlayer1: {{ toEther(totalPlayer1) }} {{ unit }}<br>
-      totalPlayer2: {{ toEther(totalPlayer2) }} {{ unit }}<br>
-      numBetsPlayer1: {{ numBetsPlayer1 }}<br>
-      numBetsPlayer2: {{ numBetsPlayer2 }}<br>
-      winner: {{ winner }}<br> 
-    </div>
-    <div v-else-if="isWaitingForConfirm">
-      isWaitingForConfirm<br>
-      myBetsP1: {{ toEther(myBetsP1) }} {{ unit }}<br>
-      myBetsP2: {{ toEther(myBetsP2) }}<br>
-      timeSuggestConfirmEnds: {{ getReadableDate(timeSuggestConfirmEnds) }}<br>
-      totalPlayer1: {{ toEther(totalPlayer1) }} {{ unit }}<br>
-      totalPlayer2: {{ toEther(totalPlayer2) }} {{ unit }}<br>
-      numBetsPlayer1: {{ numBetsPlayer1 }}<br>
-      numBetsPlayer2: {{ numBetsPlayer2 }}<br>
-      winner: {{ winner }}<br>
-    </div>
-    <div v-else-if="isPlayingForSure">
-      isPlayingForSure<br>
-      myBetsP1: {{ toEther(myBetsP1) }} {{ unit }}<br>
-      myBetsP2: {{ toEther(myBetsP2) }}<br>
-      totalPlayer1: {{ toEther(totalPlayer1) }} {{ unit }}<br>
-      totalPlayer2: {{ toEther(totalPlayer2) }} {{ unit }}<br>
-      numBetsPlayer1: {{ numBetsPlayer1 }}<br>
-      numBetsPlayer2: {{ numBetsPlayer2 }}<br> 
-    </div>
-    <div v-else-if="isFetching">
-      isFetching<br>
-      myBetsP1: {{ toEther(myBetsP1) }} {{ unit }}<br>
-      myBetsP2: {{ toEther(myBetsP2) }}<br>
-      timeSuggestConfirmEnds: {{ getReadableDate(timeSuggestConfirmEnds) 
-      }}<br>
-      totalPlayer1: {{ toEther(totalPlayer1) }} {{ unit }}<br>
-      totalPlayer2: {{ toEther(totalPlayer2) }} {{ unit }}<br>
-      numBetsPlayer1: {{ numBetsPlayer1 }}<br>
-      numBetsPlayer2: {{ numBetsPlayer2 }}<br> 
-    </div>
-    <div v-else-if="isShouldStartFetch">
-      isShouldStartFetch<br>
-      myBetsP1: {{ toEther(myBetsP1) }} {{ unit }}<br>
-      myBetsP2: {{ toEther(myBetsP2) }}<br>
-      timeSuggestConfirmEnds: {{ getReadableDate(timeSuggestConfirmEnds) }}<br>
-      totalPlayer1: {{ toEther(totalPlayer1) }} {{ unit }}<br>
-      totalPlayer2: {{ toEther(totalPlayer2) }} {{ unit }}<br>
-      numBetsPlayer1: {{ numBetsPlayer1 }}<br>
-      numBetsPlayer2: {{ numBetsPlayer2 }}<br> 
-    </div>
-    <div v-else>
-      UNKNOWN PHASE/STATUS. Please contact admin
-    </div>
+    <template v-if="showBetStats">
+      <div class="row">
+        <div class="five columns mybets">
+          {{ toEther(myBetsP1) }} {{ unit }}
+        </div>
+        <div class="two columns">&larr; Your Bets &rarr;</div>
+        <div class="five columns mybets">
+          {{ toEther(myBetsP2) }} {{ unit }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="eight columns offset-by-two">
+          <div class="label">
+            Pot: {{ toEther(totalPlayer1)+toEther(totalPlayer2) }} {{ unit }}
+          </div>
+          <div style="background-color: #f00;">
+            <div style="background-color: #0f0; height: 10px;" v-bind:style="getLeftBarWidthPool"></div>
+          </div> 
+        </div>
+      </div>
+      <div class="row">
+        <div class="eight columns offset-by-two">
+          <div class="label">
+            Number of betters: {{ numBetsPlayer1+numBetsPlayer2 }}
+          </div>
+          <div style="background-color: #f00;">
+            <div style="background-color: #0f0; height: 10px;" v-bind:style="getLeftBarWidthNum"></div>
+          </div> 
+        </div>
+      </div>
+    </template>
     
-    <!--
-    matchFinished: {{ matchFinished }}
-    winner: {{ winner }}<br>
-    isWinnerConfirmed: {{ isWinnerConfirmed }}<br>
-    isFetchingStarted: {{ isFetchingStarted }}<br>
-    -->
+  
+    <!-- The order of these if checks is important, as each check is narrowing down the bet's status further -->
+    <div class="row">
+      <div class="eight columns offset-by-two">
+        <div class="label">Status:</div>
+        <div v-if="isCancelled">
+          <p>
+            Bet got cancelled! :(
+          </p>
+          <p class="timeout">
+            Planned match begin at:<br>
+            {{ getReadableDate(timeMatchStarts) }}
+          </p>
+        </div>
+        <div v-else-if="isInactive">
+          <p>
+            Match is not open yet for placing bets.
+          </p>
+          <p class="timeout">
+            Bets open at:<br>
+            {{ getReadableDate(timeBettingOpens) }}<br>
+            Match begins at:<br>
+            {{ getReadableDate(timeMatchStarts) }}
+          </p>
+        </div>
+        <div v-else-if="isClaimExpired">
+          <p>{{ winner }} won the match!</p>
+          <p>
+            Payouts expired at:<br>
+            {{ getReadableDate(timeClaimsExpire) }}
+          </p>
+        </div>
+        <div v-else-if="isBettingOpen">
+          <p>
+            Place your bets now!
+          </p>
 
-    <input type="radio" id="p1" v-bind:value="p1" v-model="betTeam">
-    <label for="p1">{{ p1 }}</label>
-    <br>
-    <input type="radio" id="p2" v-bind:value="p2" v-model="betTeam">
-    <label for="p2">{{ p2 }}</label>
-    <br>
-    <span>Picked: {{ betTeam }}</span><br>
+          <!-- TODO: make this nice -->
+          <input type="radio" id="p1" v-bind:value="p1" v-model="betTeam">
+          <label for="p1">{{ p1 }}</label>
+          <br>
+          <input type="radio" id="p2" v-bind:value="p2" v-model="betTeam">
+          <label for="p2">{{ p2 }}</label>
+          <br>
+          <span>Your pick: {{ betTeam }}</span><br>
 
-    <input v-model="betAmount" type="number" step="0.1" placeholder="in ETH">
-    <button v-on:click="placeBet()">Bet!</button>
-    {{ result }}
+          <input v-model="betAmount" type="number" step="0.1" placeholder="in ETH">
+          <button v-on:click="placeBet()">Bet!</button>
+
+
+          <p class="timeout">
+            Bets close at:<br>
+            {{ getReadableDate(timeBettingCloses) }}<br>
+            Match begins at:<br>
+            {{ getReadableDate(timeMatchStarts) }}
+          </p>
+        </div>
+        <div v-else-if="isBettingClosed">
+          isBettingClosed<br>
+        </div>
+        <div v-else-if="isPayout">
+          <!-- TODO: do nice styling, change content when result is a draw. Also at payout expired phase ... -->
+          <p>{{ winner }} won the match!</p>
+          <p>
+            The match result is confirmed
+            and payouts can be claimed!
+          </p>
+          <p class="timeout">
+            <!-- TODO: Add 'Hurry up' when user has payouts to claim -->
+            Payouts expire at:<br>
+            {{ getReadableDate(timeClaimsExpire) }}
+          </p>
+        </div>
+        <div v-else-if="isWaitingForConfirm">
+          <p>
+            Match result was successfully fetched<br>
+            and now has to be confirmed...
+          </p>
+          <p class="timeout">
+            Match result to be confirmed until:<br>
+            {{ getReadableDate(timeSuggestConfirmEnds) }}
+          </p>
+          winner: {{ winner }}<br>
+        </div>
+        <div v-else-if="isPlayingForSure">
+          <p>
+            Match is in play!
+          </p>
+          <p class="timeout">
+            Match begin was at:<br>
+            {{ getReadableDate(timeMatchStarts) }}
+          </p>
+        </div>
+        <div v-else-if="isFetching">
+          <p>
+            Match result is currently being fetched...
+          </p>
+          <p class="timeout">
+            Match result to be confirmed until:<br>
+            {{ getReadableDate(timeSuggestConfirmEnds) }}
+          </p>
+        </div>
+        <div v-else-if="isShouldStartFetch">
+          <p>
+            Is the match over? If yes, activate the<br>
+            smart contract to start fetching the result.
+          </p>
+          <button v-on:click="claimWinOrDraw()">Activate</button><br>
+          <p class="note">
+            Depending on the external data provider, this may take a while...
+          </p>
+          <p class="timeout">
+            Match result to be confirmed until:<br>
+            {{ getReadableDate(timeSuggestConfirmEnds) }}
+          </p>
+        </div>
+        <div v-else>
+          <p>
+            Unknown bet status. Please contact admin.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="color: #bbb">
+      {{ betAddress }}
+    </div>
   </li>
 </template>
 
@@ -136,10 +207,10 @@ export default {
     return {
       instance: null,
       betAddress: null,
-      status: 0,
+      rawStatus: '',
       group: '',
-      p1: '',
-      p2: '',
+      p1: '_loading',
+      p2: '_loading',
       isFetchingStarted: false,
       matchFinished: false,
       isWinnerConfirmed: false,
@@ -167,15 +238,32 @@ export default {
     getNow () {
       return (new Date().getTime() / 1000).toFixed(0);
     },
-
+    flagPathP1 () {
+      if (p1 !== '') {
+        return '../assets/teams/' + this.p1 + '.png'
+      }
+      return '../assets/teams/_loading.png'
+    },
+    flagPathP2 () {
+      if (p2 !== '') {
+        return '../assets/teams/' + this.p2 + '.png'
+      }
+      return '../assets/teams/_loading.png'
+    },
+    status () {
+      return this.rawStatus == '1' ? 'Active' : 'Cancelled'
+    },
     timeMatchStarts: function() {
       return this.timeBettingCloses + 15*60
     },
     timeMatchEndsEarliest: function() {
       return this.timeMatchStarts + 105*60
     },
+    showBetStats () {
+      return !(this.isCancelled || this.isInactive || this.isClaimExpired)
+    },
     isCancelled: function() {
-      return this.status == "0"
+      return this.rawStatus == "0"
     },
     isInactive: function () {
       console.log("call to isInactive")
@@ -223,6 +311,13 @@ export default {
       } else {
         return 'Undecided'
       }
+    },
+    getLeftBarWidthPool () {
+      return "width: " + ((this.toEther(this.totalPlayer1) / (this.toEther(this.totalPlayer1)+this.toEther(this.totalPlayer2))) * 100) + "%;"
+    },
+    getLeftBarWidthNum () {
+      console.log(typeof(numBetsPlayer1))
+      return "width: " + ((this.numBetsPlayer1 / (this.numBetsPlayer1+this.numBetsPlayer2)) * 100) + "%;"
     }
   },
   methods: {
@@ -245,7 +340,6 @@ export default {
       this.getIsFetchingStarted()
       this.getWinner()
     },
-    
     toEther (weiString) {
       return Number(this.web3.utils.fromWei(weiString))
     },
@@ -321,7 +415,7 @@ export default {
     },
     getStatus: function () {
       this.instance.status.call().then(s => {
-        this.status = s
+        this.rawStatus = s
       })
     },
     getP1: function () {
@@ -391,15 +485,11 @@ export default {
     this.getAddressAndInstance().then(function() {
       that.getContractState()
     })
-    
   },
-  watch: { // listen for changes on variables in 'data'. Usually a computed-propery is favorable
-    firstName: function (val) {
-      this.fullName = val + ' ' + this.lastName
-    },
-    question: function (someInput) {
-      this.runAsyncFunctionDefinedInMethods()
-      this.palceBet()
+  watch: {
+    account: function (newAccount) {
+      this.getMyBetsP1()
+      this.getMyBetsP2()
     }
   }
 }
@@ -423,5 +513,29 @@ li {
 a {
   color
   : #42b983;
+}
+.flag {
+  border: 1px solid #ddd;
+}
+.vs {
+  font-size: 4rem;
+  font-weight: bold;
+}
+.mybets {
+  font-style: italic;
+}
+.label {
+  color: #aaa;
+  text-align: left;
+}
+.note {
+  font-size: 1.2rem;
+  line-height: 1.3;
+  margin: 10px 0px;
+}
+.timeout {
+  margin: 20px 0px;
+  color: orange;
+  font-style: italic;
 }
 </style>

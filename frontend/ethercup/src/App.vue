@@ -1,14 +1,23 @@
 <template>
-  <div id="app">
-    <!--<img src="./assets/logo.png">-->
-    {{ this.account }}<br>
-    {{ this.balance }}
+  <div class="container" id="app">
+
+    <h1>Ethercup</h1>
+
+    <div id="personal" class="container">
+      <b>Your Account:</b>
+      <p>
+        Address: {{ this.account }}<br>
+        Balance: <span style="font-style: italic">{{ this.balance }} ETH</span>
+      </p>
+    </div>
+
     <Bets
         v-bind:web3="web3"
         v-bind:provider="provider"
         v-bind:account="account"
         v-bind:balance="balance"
     />
+
   </div>
 </template>
 
@@ -113,6 +122,9 @@ export default {
 </script>
 
 <style>
+p {
+  line-height: 2rem;
+}
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -120,5 +132,8 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+}
+#personal {
+  text-align: left;
 }
 </style>

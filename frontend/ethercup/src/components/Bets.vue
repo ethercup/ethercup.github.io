@@ -1,8 +1,17 @@
 <template>
-  <div class="thebets">
-    <h1>{{ headline }}</h1>
-    {{account}}
-    {{numBets}}
+  <div>
+    <div class="container">
+      <p style="text-align: left">
+        Available matches: {{ numBets }}
+      </p>
+    </div>
+    <div class="container">
+      <p>
+        Filter matches by:
+      </p>
+      <p>TEAM, BETTINGOPEN, LAST X, NEXT X</p>
+    </div>
+   
     <ul>
       <Bet
         v-for="n in numBets" :key="n"
@@ -14,7 +23,7 @@
         v-bind:balance="balance"
       />
     </ul>
-</div>
+  </div>
 </template>
 
 
@@ -32,7 +41,6 @@ export default {
   props: ['web3', 'provider', 'account', 'balance'],
   data () {
     return {
-      headline: 'Bets',
       numBets: 0,
       betRegistry: {
         address: '0xb09e08f2d8ba53ff54c464f7ec1135a92faea937',

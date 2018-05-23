@@ -176,8 +176,12 @@ contract Bet is usingOraclize, Ownable {
 
   modifier startFetchingIfUnstarted() {
       if (isFetchingStarted == false) {
+        if (now <= timeSuggestConfirmEnds) {
           fetchMatchStatus(0); // 0 == fetch now, without delay
           isFetchingStarted = true;
+        } else {
+          cancelInternal()
+        }
       } else {
           _;
       }
@@ -187,7 +191,6 @@ contract Bet is usingOraclize, Ownable {
     Helper functions
   */
   function getMinOraclizeGasCost() public returns (uint256) {
-      test = "a";
       return oraclize_getPrice("URL", GAS_LIMIT_GOALS);
   }
 
@@ -435,12 +438,17 @@ contract Bet is usingOraclize, Ownable {
 
           emit WinnerConfirmed(winner);
       } else {
-          cancel();
+          cancelInternal();
       }
   }
 
   function cancel() public
       onlyOwner
+  {
+      cancelInternal()
+  }
+
+  function cancelInternal() private
       isNotCancelled
       canBeCancelled
   {

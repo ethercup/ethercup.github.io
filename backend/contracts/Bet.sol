@@ -5,48 +5,52 @@ import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 import './oraclizeAPI_0.4.sol';
 
 contract Bet is usingOraclize, Ownable {
-  using SafeMath for uint256;
+  using SafeMath for uint;
 
   enum Status { Cancelled, Active }
   enum Winner { Undecided, Player1, Player2, Draw }
 
-  uint8 private constant FEE_PERCENT = 1;
-  uint256 private constant MIN_SUGGESTCONFIRM_DURATION = 6 hours;
-  uint256 private constant CLAIM_EXPIRES_AFTER = 8 weeks;
-  uint8 private constant MAX_GOALS = 25;
+  uint private constant FEE_PERCENT = 1;
+  uint private constant MIN_BET = 1e15;
+  uint private constant MIN_SUGGESTCONFIRM_DURATION = 6 hours;
+  uint private constant CLAIM_EXPIRES_AFTER = 8 weeks;
+  uint private constant MAX_GOALS = 25;
 
   Status public status = Status.Active;
 
-  uint8 public matchId;
+  uint public matchId;
   string public apiMatchId;
   string public matchContext;
   string public p1;
   string public p2;
   bool public isGroupPhase;
-  uint256 public timeBettingOpens;
-  uint256 public timeBettingCloses;
-  uint256 public timeMatchEnds;
-  uint256 public timeFetchStarts;
-  uint256 public timeSuggestConfirmEnds;
-  uint256 public timeClaimsExpire;
+  uint public timeBettingOpens;
+  uint public timeBettingCloses;
+  uint public timeMatchEnds;
+  uint public timeFetchStarts;
+  uint public timeSuggestConfirmEnds;
+  uint public timeClaimsExpire;
 
-  event FetchingFailed(uint256 balance, uint256 fetchAttempt, uint256 MAX_FETCH_ATTEMPTS);
+  event FetchingFailed(uint balance, uint fetchAttempt, uint MAX_FETCH_ATTEMPTS);
   event WinnerSuggested(Winner winner);
   event WinnerConfirmed(Winner winner);
   event BettingCancelled(string p1, string p2);
 
-  uint256 private MAX_GAS_PRICE = 6e9; // 8GWei. Not constant so that it can be increased by the owner in case of higher demands in the future
-  //uint256 private constant GAS_LIMIT = 300000; // works: 300000
-  uint256 private constant GAS_LIMIT_MATCHSTATUS = 225000; // works: 300000
-  uint256 private constant GAS_LIMIT_GOALS = 240000; // works: 300000
-  uint256 private constant GAS_LIMIT_GOALS_PENALTY = 60000; // works: 300000
+  uint private MAX_GAS_PRICE = 6e9; // 8GWei. Not constant so that it can be increased by the owner in case of higher demands in the future
+  //uint private constant GAS_LIMIT = 300000; // works: 300000
+  uint private constant GAS_LIMIT_MATCHSTATUS = 225000; // works: 300000
+  uint private constant GAS_LIMIT_GOALS = 240000; // works: 300000
+  uint private constant GAS_LIMIT_GOALS_PENALTY = 60000; // works: 300000
+  uint private constant MAX_GAS = GAS_LIMIT_GOALS;
   // Best case (api has result after match ends): Min 3 fetches, max 5 fetches.
   // Add a buffer of 4 fetches (4 hours since 1 fetch/h)
   // --> 9 fetches max. Can be reset when refunded (see fundFetching())
-  uint256 private constant MAX_FETCH_ATTEMPTS = 9; // One fetch costs around 0.8-1.2 USD
-  uint256 private constant FETCH_INTERVAL = 60*60; // 60min in seconds
+  uint private constant NORMAL_MAX_FETCHES = 5; // 1x match result, 2x normal goals, 2x penalty shootout goals
+  uint private constant MAX_FETCH_ATTEMPTS = 9; // One fetch costs around 0.8-1.2 USD
+  uint private constant FETCH_INTERVAL = 60*60; // 60min in seconds
   string private URL;
-  uint256 public fetchAttempt;
+  uint public fetchFund;
+  uint public fetchAttempt;
   bool public isFetchingStarted = false;
   bool public matchFinished = false;
   bytes32 private hashFinished;
@@ -66,20 +70,20 @@ contract Bet is usingOraclize, Ownable {
 
   string public test;
 
-  uint256 public pool;
-  uint256 public payoutPool;
-  uint256 public remainingPayoutPool;
-  uint256 public feeEarning;
-  mapping(address => uint256) public betsPlayer1;
-  mapping(address => uint256) public betsPlayer2;
-  uint256 public total;
-  uint256 public totalPlayer1;
-  uint256 public totalPlayer2;
-  uint256 public numBetsPlayer1;
-  uint256 public numBetsPlayer2;
+  uint public pool;
+  uint public payoutPool;
+  uint public remainingPayoutPool;
+  uint public feeEarning;
+  mapping(address => uint) public betsPlayer1;
+  mapping(address => uint) public betsPlayer2;
+  uint public total;
+  uint public totalPlayer1;
+  uint public totalPlayer2;
+  uint public numBetsPlayer1;
+  uint public numBetsPlayer2;
 
-  modifier hasWei() {
-      require(msg.value > 0);
+  modifier hasMinWei() {
+      require(msg.value >= MIN_BET);
       _;
   }
 
@@ -93,11 +97,6 @@ contract Bet is usingOraclize, Ownable {
 
   modifier canStartFetch() {
       require(now > timeFetchStarts);
-      _;
-  }
-
-  modifier isSuggestConfirmPhase() {
-      require(now > timeFetchStarts && now <= timeSuggestConfirmEnds, 'It is too early or too late to suggest/confirm a winner');
       _;
   }
 
@@ -131,7 +130,7 @@ contract Bet is usingOraclize, Ownable {
 
   modifier cancelIfTooLateForConfirmation() {
       if (now > timeSuggestConfirmEnds && winnerConfirmed == false) {
-        cancelInternal()
+        cancelInternal();
       } else {
         _;
       }
@@ -191,14 +190,19 @@ contract Bet is usingOraclize, Ownable {
       }
   }
 
+  modifier enoughFetchFund() {
+      require(msg.value >= (NORMAL_MAX_FETCHES * oraclize_getPrice("URL", MAX_GAS)));
+      _;
+  }
+
   /*
     Helper functions
   */
-  function getMinOraclizeGasCost() public returns (uint256) {
+  function getMinOraclizeGasCost() public returns (uint) {
       return oraclize_getPrice("URL", GAS_LIMIT_GOALS);
   }
 
-  function isValidWinner(uint8 _winner) private view returns (bool) {
+  function isValidWinner(uint _winner) private view returns (bool) {
       if (_winner == 1 ||  _winner == 2) {
           return true;
       }
@@ -213,21 +217,22 @@ contract Bet is usingOraclize, Ownable {
   }
 
   constructor(
-      uint8 _matchId,
+      uint _matchId,
       string _apiMatchId,
       string _matchContext,
       string _p1,
       string _p2,
       bool _isGroupPhase,
-      uint256 _matchStart,
-      uint256 _durationBetting,
-      uint256 _durationSuggestConfirm)
+      uint _matchStart,
+      uint _durationBetting,
+      uint _durationSuggestConfirm)
       public
       payable
   {
       oraclize_setCustomGasPrice(MAX_GAS_PRICE);
       hashFinished = keccak256('FINISHED');
       
+      fetchFund = msg.value;
       matchId = _matchId;
       apiMatchId = _apiMatchId;
       matchContext = _matchContext;
@@ -239,12 +244,12 @@ contract Bet is usingOraclize, Ownable {
   }
 
   // public for testing
-  function _setTimes(uint256 _matchStart, uint256 _durationBetting, uint256 _durationSuggestConfirm) public {
+  function _setTimes(uint _matchStart, uint _durationBetting, uint _durationSuggestConfirm) public {
       require(_durationSuggestConfirm >= MIN_SUGGESTCONFIRM_DURATION); // longer than 2h in case max match duration is reached (overtimes + penalty shootout)
 
       // Miners can cheat on block timestamp with a tolerance of 900 seconds.
       // That's why betting is closed 900 seconds before match start.
-      timeBettingCloses = _matchStart - 900 seconds;
+      timeBettingCloses = _matchStart - 15 minutes;
       timeBettingOpens = _matchStart - _durationBetting;
       timeMatchEnds = timeBettingCloses + 105 minutes;
       timeFetchStarts = timeMatchEnds + 30 minutes;
@@ -259,7 +264,7 @@ contract Bet is usingOraclize, Ownable {
   function betOnPlayer1() external payable
       isNotCancelled
       isBettingPhase
-      hasWei
+      hasMinWei
   {
       betsPlayer1[msg.sender] = betsPlayer1[msg.sender].add(msg.value);
       numBetsPlayer1 += 1;
@@ -270,7 +275,7 @@ contract Bet is usingOraclize, Ownable {
   function betOnPlayer2() external payable
       isNotCancelled
       isBettingPhase
-      hasWei
+      hasMinWei
   {
       betsPlayer2[msg.sender] = betsPlayer2[msg.sender].add(msg.value);
       numBetsPlayer2 += 1;
@@ -281,12 +286,12 @@ contract Bet is usingOraclize, Ownable {
   /* kovan: 97000 gas, 106694, 106716 */
   // gas used when not first call (second or higher call): 76716
   // oraclize fee paid: 0.0018277 ether
-  function fetchMatchStatus(uint256 _delay) private {
+  function fetchMatchStatus(uint _delay) private {
       string memory query = strConcat('json(', URL, ').fixture.status');
       queryStatus = fetch(query, _delay, GAS_LIMIT_MATCHSTATUS);
   }
 
-  function fetchGoalsP1(uint256 _delay, bool _isPenalty) private {
+  function fetchGoalsP1(uint _delay, bool _isPenalty) private {
       string memory query;
 
       if (_isPenalty == true) {
@@ -298,7 +303,7 @@ contract Bet is usingOraclize, Ownable {
       }
   }
 
-  function fetchGoalsP2(uint256 _delay, bool _isPenalty) private {
+  function fetchGoalsP2(uint _delay, bool _isPenalty) private {
       string memory query;
 
       if (_isPenalty == true) {
@@ -310,17 +315,16 @@ contract Bet is usingOraclize, Ownable {
       }
   }
 
-  function fetch(string _query, uint256 _delay, uint256 _gaslimit) private
+  function fetch(string _query, uint _delay, uint _gaslimit) private
       returns (bytes32)
   {
-      if (address(this).balance > oraclize_getPrice("URL", _gaslimit) &&
-          fetchAttempt < MAX_FETCH_ATTEMPTS)
-      {
+      uint fetchCost = oraclize_getPrice("URL", _gaslimit);
+      if (fetchFund >= fetchCost && fetchAttempt < MAX_FETCH_ATTEMPTS) {
           fetchAttempt = fetchAttempt.add(1);
+          fetchFund = fetchFund.sub(fetchCost);
           return oraclize_query(_delay, 'URL', _query, _gaslimit);  
       } else {
-          status = Status.Cancelled;
-          emit FetchingFailed(address(this).balance, fetchAttempt, MAX_FETCH_ATTEMPTS);
+          emit FetchingFailed(fetchFund, fetchAttempt, MAX_FETCH_ATTEMPTS);
           return 0x1;
       }
   }
@@ -401,9 +405,9 @@ contract Bet is usingOraclize, Ownable {
               winnerSuggested = true;
               emit WinnerSuggested(winner);
           } else {
-              // We are in knockout-stage, thus Winner.Draw not possible
+              // If this is reached match is knockout-match, meaning no draw is possible
               // --> Fetch penalty shootout goals
-              // If still P1 and P2 have same amount of goals (shouldn't happen), MAX_FETCH_ATTEMPTS should eventually cancel the bet
+              // If still P1 and P2 have same amount of goals (shouldn't happen), MAX_FETCH_ATTEMPTS eventually cancels the bet
               fetchingPenaltyGoals = true;
               goalsP1Fetched = false;
               goalsP2Fetched = false;
@@ -415,12 +419,12 @@ contract Bet is usingOraclize, Ownable {
 
   // gas: 106286, 126500
   // WHEN already confirmed (fail): 24450
-  function confirmWinner(uint8 _winnerAsInt) external
+  function confirmWinner(uint _winnerAsInt) external
       onlyOwner
       isNotCancelled
       isWinnerSuggested
       cancelIfTooLateForConfirmation
-      isFirstConfirmCall
+      isFirstConfirmCall // alternative modifier: canBeCancelled
   {
       require(isValidWinner(_winnerAsInt));
       ownerCalledConfirmFunction = true;
@@ -431,7 +435,7 @@ contract Bet is usingOraclize, Ownable {
           pool = totalPlayer1.add(totalPlayer2);
 
           if (pool > 0) {
-              uint256 feeAmount = pool.mul(FEE_PERCENT).div(100);
+              uint feeAmount = pool.mul(FEE_PERCENT).div(100);
               feeEarning = feeAmount;
               payoutPool = pool.sub(feeAmount);
               remainingPayoutPool = payoutPool;
@@ -467,7 +471,7 @@ contract Bet is usingOraclize, Ownable {
       canBeCancelled
   {
       if (now > timeSuggestConfirmEnds && winnerConfirmed == false) {
-        cancelInternal()
+        cancelInternal();
       }
   }
 
@@ -482,7 +486,7 @@ contract Bet is usingOraclize, Ownable {
       isWinnerConfirmed
       isClaimNotExpired
   {
-      uint256 payout;
+      uint payout;
       // Check if msg.sender has bets on winner team
       if (winner == Winner.Player1 && betsPlayer1[msg.sender] > 0) {
           payout = payoutPool.mul(betsPlayer1[msg.sender]).div(totalPlayer1);
@@ -511,7 +515,7 @@ contract Bet is usingOraclize, Ownable {
       isClaimNotExpired
       hasBets
   {
-      uint256 refund = betsPlayer1[msg.sender].add(betsPlayer2[msg.sender]);
+      uint refund = betsPlayer1[msg.sender].add(betsPlayer2[msg.sender]);
       betsPlayer1[msg.sender] = 0;
       betsPlayer2[msg.sender] = 0;
 
@@ -526,6 +530,7 @@ contract Bet is usingOraclize, Ownable {
       isExpiredPhase
   {
       payoutPool = 0;
+      fetchFund = 0;
 
       msg.sender.transfer(address(this).balance);
   }
@@ -533,19 +538,22 @@ contract Bet is usingOraclize, Ownable {
   function fundFetching() public payable
       isNotCancelled
       isNotWinnerSuggested
-      isSuggestConfirmPhase
+      cancelIfTooLateForConfirmation
+      enoughFetchFund
   {
-      // Fund must be substantial because we reset fetchAttempts.
-      // Contract balance can be drained if fetchAttempt is reset
-      // every time this function is called, when the fetches
-      // 0->MAX_FETCH_ATTEMPTS cost more than funded `msg.value`.
-      require(msg.value >= 1e16); // 1/100 ether = ~7 dollar
+      fetchFund = fetchFund.add(msg.value);
       fetchAttempt = 0;
       isFetchingStarted = true;
       fetchMatchStatus(0);
   }
 
-  function increaseGasPriceBy(uint256 _extra) external
+  function isFetchFundingNeeded() public
+      returns (bool)
+  {
+      return (fetchFund < oraclize_getPrice("URL", MAX_GAS));
+  }
+
+  function increaseGasPriceBy(uint _extra) external
       onlyOwner
   {
       MAX_GAS_PRICE = MAX_GAS_PRICE.add(_extra);

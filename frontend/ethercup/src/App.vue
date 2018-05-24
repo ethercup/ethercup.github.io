@@ -3,7 +3,7 @@
 
     <h1>Ethercup</h1>
 
-    <template v-if="hasMetamask">
+    <template v-if="(hasMetamask && isUsingCorrectNetwork)">
       <div id="personal" class="container">
         <b>Your Account:</b>
         <p v-if="isSignedInMetamask">
@@ -24,13 +24,21 @@
       />
     </template>
     <template v-else>
-      <p class="warning no-metamask">
-        MetaMask browser plugin not found.<br>
-        Please install MetaMask to proceed.
-      </p>
-      <a href="https://metamask.io" target="_blank">
-        <img src="./assets/metamask.png" width="50%"/>
-      </a>
+      <template v-if="!hasMetamask">
+        <p class="warning no-metamask">
+          MetaMask browser plugin not found.<br>
+          Please install MetaMask to proceed.
+        </p>
+        <a href="https://metamask.io" target="_blank">
+          <img src="./assets/metamask.png" width="50%"/>
+        </a>
+      </template>
+      <template v-if="!isUsingCorrectNetwork">
+        <p class="warning metamask-issue">
+          Currently, you are on the {{ getNetworkName(network) }}.<br>
+          Please switch to the <b>{{ getNetworkName(correctNetwork) }}</b> in Metamask.
+        </p>
+      </template>
     </template>
   </div>
 </template>
@@ -51,19 +59,25 @@ export default {
       network: 0,
       hasMetamask: false,
       account: '',
-      accountRefresh: null,
+      updateInterval: null,
       balance: 0,
     }
   },
   computed: {
     isSignedInMetamask () {
       return this.account != ''
+    },
+    isUsingCorrectNetwork () {
+      return this.networkId == process.env.NETWORK_ID
+    },
+    correctNetwork () {
+      return process.env.NETWORK_ID
     }
   },
   created () {
+    require('dotenv').config();
     this.initWeb3()
     this.updateNetworkAndAccount()
-    this.networkCheck()
   },
   methods: {
     initWeb3 () {
@@ -72,7 +86,7 @@ export default {
         this.web3 = new Web3(this.provider)
         this.hasMetamask = true
       } else {
-        console.log('No web3? You should consider trying MetaMask!')
+        console.log('Please install the MetaMask browser plugin to proceed')
       }
     },
     updateBalance () {
@@ -83,7 +97,7 @@ export default {
     getAccount() {
       this.web3.eth.getAccounts().then(acc => {
         if (acc !== undefined && acc.length > 0 && acc[0] != this.account) {
-          this.account = acc[0]
+          this.account = acc[0].toLowerCase()
           this.updateBalance()
         }
       })
@@ -100,41 +114,31 @@ export default {
     },
     updateNetworkAndAccount () {
       var that = this
-      this.accountInterval = setInterval(function() {
+      this.updateInterval = setInterval(function() {
         that.getAccount()
         that.getNetwork()
       }, 200);
     },
-    networkCheck () {
-      this.web3.eth.net.getId(function (err, netId) {
-        if (err) {
-          console.log(err)
-          return
-        }
-        switch (netId) {
-          case 1:
-            console.log('This is mainnet')
-            break
-          case 2:
-            console.log('This is the deprecated Morden test network.')
-            break
-          case 3:
-            console.log('This is the ropsten test network.')
-            break
-          case 4:
-            console.log('This is the rinkeby test network.')
-            break
-          case 42:
-            console.log('This is the kovan test network.')
-            break
-          default:
-            console.log('This is an unknown network.')
-        }
-      })
-    },
+    getNetworkName (networkId) {
+      switch (networkId) {
+        case 1:
+          return 'Main network'
+        case 2:
+          return 'Morden test network'
+        case 3:
+          return 'Ropsten test network'
+        case 4:
+          return 'Rinkeby test network'
+        case 42:
+          return 'Kovan test network'
+        default:
+          console.log('This is an unknown network.')
+          return 'Unknown network'
+      } 
+    }
   },
   beforeDestroy () {
-    clearInterval(this.accountInterval)
+    clearInterval(this.updateInterval)
   }
 }
 </script>
@@ -161,7 +165,7 @@ p {
 #personal {
   text-align: left;
 }
-.no-metamask {
+.metamask-issue {
   font-size: 1.8rem;
   line-height: 3rem;
   margin: 50px 0px;

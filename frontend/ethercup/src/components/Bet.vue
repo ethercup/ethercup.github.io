@@ -321,7 +321,6 @@ export default {
       return "width: " + ((this.toEther(this.totalPlayer1) / (this.toEther(this.totalPlayer1)+this.toEther(this.totalPlayer2))) * 100) + "%;"
     },
     getLeftBarWidthNum () {
-      console.log(typeof(numBetsPlayer1))
       return "width: " + ((this.numBetsPlayer1 / (this.numBetsPlayer1+this.numBetsPlayer2)) * 100) + "%;"
     }
   },
@@ -581,3 +580,5 @@ a {
   font-style: italic;
 }
 </style>
+
+<!-- TODO: improve default rendered content that shows at the very beginning of the loading. -->

@@ -1,17 +1,16 @@
 <template>
   <div>
     <div class="container">
-      <p style="text-align: left">
-        Available matches: {{ numBets }}
+      <p style="text-align: left;">
+        Available matches: {{ numBets }}<br>
+        <label for="checkbox" style="display: inline; font-weight: 400;">Hide finished matches:</label>
+        <input type="checkbox" id="checkbox" v-model="hideFinishedMatches">
       </p>
+      
     </div>
-    <div class="container">
-      <p>
-        Filter matches by:
-      </p>
-      <p>TEAM, BETTINGOPEN, LAST X, NEXT X</p>
-    </div>
-   
+
+    <!-- Check if hiderFinishedMatches works -->
+    <!--<p>TEAM, BETTINGOPEN, LAST X, NEXT X</p>-->
     <ul>
       <Bet
         v-for="n in numBets" :key="n"
@@ -21,6 +20,7 @@
         v-bind:betContract="betContract"
         v-bind:account="account"
         v-bind:balance="balance"
+        v-bind:hideFinishedMatches="hideFinishedMatches"
       />
     </ul>
   </div>
@@ -46,7 +46,8 @@ export default {
         address: '0xb09e08f2d8ba53ff54c464f7ec1135a92faea937',
         instance: null
       },
-      betContract: null
+      betContract: null,
+      hideFinishedMatches: true,
     }
   },
   methods: {

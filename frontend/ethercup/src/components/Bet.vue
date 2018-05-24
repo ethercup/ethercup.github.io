@@ -1,10 +1,5 @@
-<template>
-  <li class="bet container" style="border: 1px solid #bbb">
-    <div class="row" style="text-align:left; color: #bbb">
-        Bet Status: {{ status }}<br>
-        Match #{{ matchId+1 }}, Group {{ group }}
-    </div>
-
+<template v-if="!(hideFinishedMatches && matchFinished)">
+  <li class="bet container">
     <div class="row">
       <div class="five columns">
         <h5>{{ p1 }}</h5>
@@ -14,12 +9,18 @@
         <h5>{{ p2 }}</h5>
       </div>
     </div>
-    <div class="row">
+    <div class="row" style="position: relative;">
       <div class="five columns">
         <img class="flag u-max-full-width" v-bind:src="require(`@/assets/teams/${p1}.png`)">
       </div>
-      <div class="two columns vs">
-        VS
+      <div class="two columns">
+        <div class="vs">VS</div>
+        <div class="match-context">
+          {{ matchContext }}
+        </div>
+        <div class="small">
+          Match {{ matchId+1 }}<span class="gray">/60</span>
+        </div>
       </div>
       <div class="five columns">
         <img class="flag u-max-full-width" v-bind:src="require(`@/assets/teams/${p2}.png`)">
@@ -27,48 +28,48 @@
     </div>
 
     <template v-if="showBetStats">
-      <div class="row">
-        <div class="five columns mybets">
-          {{ toEther(myBetsP1) }} {{ unit }}
+      <div class="row" v-show="isSignedInMetamask">
+        <div class="five columns">
+          <i>{{ toEther(myBetsP1) }} {{ unit }}</i>
         </div>
-        <div class="two columns">&larr; Your Bets &rarr;</div>
-        <div class="five columns mybets">
-          {{ toEther(myBetsP2) }} {{ unit }}
-        </div>
-      </div>
-      <div class="row">
-        <div class="eight columns offset-by-two">
-          <div class="label">
-            Pot: {{ toEther(totalPlayer1)+toEther(totalPlayer2) }} {{ unit }}
-          </div>
-          <div style="background-color: #f00;">
-            <div style="background-color: #0f0; height: 10px;" v-bind:style="getLeftBarWidthPool"></div>
-          </div> 
+        <div class="two columns small gray" style="line-height: 2.5rem;">Your&nbsp;bets</div>
+        <div class="five columns">
+          <i>{{ toEther(myBetsP2) }} {{ unit }}</i>
         </div>
       </div>
-      <div class="row">
-        <div class="eight columns offset-by-two">
-          <div class="label">
-            Number of betters: {{ numBetsPlayer1+numBetsPlayer2 }}
+      <div class="stats">
+        <div class="row">
+          <div class="eight columns offset-by-two">
+            <div class="left">
+              Pot: {{ pot }} {{ unit }}
+            </div>
+            <div class="statsbar-right">
+              <div class="statsbar-left" v-bind:style="getLeftBarWidthPool"></div>
+            </div> 
           </div>
-          <div style="background-color: #f00;">
-            <div style="background-color: #0f0; height: 10px;" v-bind:style="getLeftBarWidthNum"></div>
-          </div> 
+        </div>
+        <div class="row">
+          <div class="eight columns offset-by-two">
+            <div class="left">
+              Number of betters: {{ numBetsPlayer1+numBetsPlayer2 }}
+            </div>
+            <div class="statsbar-right">
+              <div class="statsbar-left" v-bind:style="getLeftBarWidthNum"></div>
+            </div> 
+          </div>
         </div>
       </div>
     </template>
     
-  
     <!-- The order of these if checks is important, as each check is narrowing down the bet's status further -->
-    <div class="row">
+    <div class="row status">
       <div class="eight columns offset-by-two">
-        <div class="label">Status:</div>
         <div v-if="isCancelled">
           <p>
-            Bet got cancelled! :(
+            Bet is cancelled! :(
           </p>
           <p class="timeout">
-            Planned match begin at:<br>
+            Planned match start at:<br>
             {{ getReadableDate(timeMatchStarts) }}
           </p>
         </div>
@@ -116,7 +117,13 @@
           </p>
         </div>
         <div v-else-if="isBettingClosed">
-          isBettingClosed<br>
+          <p>
+            Betting is closed. Match is beginning shortly...
+          </p>
+          <p class="timeout">
+            Match begins at:<br>
+            {{ getReadableDate(timeMatchStarts) }}
+          </p>
         </div>
         <div v-else-if="isPayout">
           <!-- TODO: do nice styling, change content when result is a draw. Also at payout expired phase ... -->
@@ -165,8 +172,11 @@
             Is the match over? If yes, activate the<br>
             smart contract to start fetching the result.
           </p>
-          <button v-on:click="claimWinOrDraw()">Activate</button><br>
-          <p class="note">
+          <button class="button" v-on:click="claimWinOrDraw()">
+            Activate
+            <img v-if="showSpinner" src="../assets/spinner.gif" class="spinner" />
+          </button><br>
+          <p class="note small">
             Depending on the external data provider, this may take a while...
           </p>
           <p class="timeout">
@@ -175,8 +185,9 @@
           </p>
         </div>
         <div v-else>
-          <p>
+          <p class="warning">
             Unknown bet status. Please contact admin.
+            <!-- offer refresh button -->
           </p>
         </div>
       </div>
@@ -196,21 +207,21 @@ const monthNames = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
 
-const DEFAULT_GAS = 150000
+const DEFAULT_GAS = 170000
 const BET_GAS = 90000
 const DEFAULT_GAS_PRICE = 6e9
 
 export default {
   name: 'Bets',
-  props: ['web3', 'betRegistry', 'betContract', 'matchId', 'account', 'balance'],
+  props: ['web3', 'betRegistry', 'betContract', 'matchId', 'account', 'balance', 'hideFinishedMatches'],
   data () {
     return {
       instance: null,
       betAddress: null,
       rawStatus: '',
-      group: '',
-      p1: '_loading',
-      p2: '_loading',
+      matchContext: '',
+      p1: 'Team 1',
+      p2: 'Team 2',
       isFetchingStarted: false,
       matchFinished: false,
       isWinnerConfirmed: false,
@@ -228,30 +239,24 @@ export default {
 
       betTeam: '',
       betAmount: '',
-      result: '',
+      showSpinner: false,
     }
   },
   computed: {
+    isSignedInMetamask () {
+      return this.account != ''
+    },
     unit: function () {
       return 'ETH'
     },
     getNow () {
       return (new Date().getTime() / 1000).toFixed(0);
     },
-    flagPathP1 () {
-      if (p1 !== '') {
-        return '../assets/teams/' + this.p1 + '.png'
-      }
-      return '../assets/teams/_loading.png'
-    },
-    flagPathP2 () {
-      if (p2 !== '') {
-        return '../assets/teams/' + this.p2 + '.png'
-      }
-      return '../assets/teams/_loading.png'
-    },
     status () {
       return this.rawStatus == '1' ? 'Active' : 'Cancelled'
+    },
+    pot () {
+      return this.toEther(this.totalPlayer1) + this.toEther(this.totalPlayer2)
     },
     timeMatchStarts: function() {
       return this.timeBettingCloses + 15*60
@@ -283,11 +288,11 @@ export default {
     },
     isPayout: function () {
       console.log("call to isPayout")
-      return this.matchFinished == true && this.isWinnerConfirmed() == true// && this.getNow < this.timeClaimsExpire
+      return this.matchFinished == true && this.isWinnerConfirmed == true// && this.getNow < this.timeClaimsExpire
     },
     isWaitingForConfirm: function () {
       console.log("call to isWaitingForConfirm")
-      return this.matchFinished == true && this.isWinnerConfirmed() == false && this.getNow < this.timeSuggestConfirmEnds
+      return this.matchFinished == true && this.isWinnerConfirmed == false && this.getNow < this.timeSuggestConfirmEnds
     },
     isPlayingForSure: function () {
       console.log("call to isPlayingForSure")
@@ -295,7 +300,7 @@ export default {
     },
     isFetching: function () {
       console.log("call to isFetching")
-      return this.isFetchingStarted == true
+      return this.isFetchingStarted == true && this.getNow < this.timeSuggestConfirmEnds
     },
     isShouldStartFetch: function () {
       console.log("call to isShouldStartFetch")
@@ -323,7 +328,7 @@ export default {
   methods: {
     getContractState: async function() {
       this.getStatus()
-      this.getGroup()
+      this.getMatchContext()
       this.getP1()
       this.getP2()
       this.getMatchFinished()
@@ -365,7 +370,7 @@ export default {
         })
         .catch(err => {
           this.result = 'Transaction failed.'
-        })  
+        })
       } else if (this.betTeam == this.p2) {
         this.instance.betOnPlayer2({
           from: this.account,
@@ -379,6 +384,23 @@ export default {
           this.result = 'Transaction failed.'
         })  
       }
+    },
+    claimWinOrDraw: async function() {
+      this.showSpinner = true;
+
+      this.instance.claimWinOrDraw({
+        from: this.account,
+        gas: DEFAULT_GAS
+      })
+      .then(r => {
+        this.showSpinner = false;
+        this.getContractState()
+        console.log('Tx calling claimWinOrDraw is mined! (Tx hash: ' + r.tx + ')')
+      })
+      .catch(err => {
+        this.showSpinner = false;
+        console.error('Tx calling claimWinOrDraw failed.')
+      })  
     },
     validatePlaceBet(team, ether) {
       let wei = this.web3.utils.toWei(ether)
@@ -404,13 +426,9 @@ export default {
         });
       });
     },
-    getGroup: function () {
-      this.instance.isGroupPhase.call().then(isGroupPhase => {
-        if(isGroupPhase) {
-          this.instance.group.call().then(g => {
-            this.group = g
-          })  
-        }  
+    getMatchContext: function () {
+      this.instance.matchContext.call().then(mc => {
+        this.matchContext = mc
       })
     },
     getStatus: function () {
@@ -468,7 +486,6 @@ export default {
     },
     getWinner: async function() {
       this.instance.winner.call().then(winner => {
-          console.log("Winner: " + winner)
           this.rawWinner = winner;  
       })
     },
@@ -499,9 +516,6 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 
-h1, h2 {
-  font-weight: normal;
-}
 ul {
   list-style-type: none;
   padding: 0;
@@ -514,6 +528,11 @@ a {
   color
   : #42b983;
 }
+.bet {
+  padding: 15px;
+  border: 1px solid #eee;
+  background-color: rgb(250,250,250);
+}
 .flag {
   border: 1px solid #ddd;
 }
@@ -521,16 +540,39 @@ a {
   font-size: 4rem;
   font-weight: bold;
 }
-.mybets {
-  font-style: italic;
+.match-context {
+  margin-top: 5px;
 }
-.label {
-  color: #aaa;
-  text-align: left;
+.stats {
+  margin: 20px 0px;
 }
-.note {
+.statsbar-right {
+  background-color: rgb(168, 220, 255);
+}
+.statsbar-left {
+  background-color: rgb(207, 255, 168);
+  height: 8px;
+}
+.status {
+  margin-top: 25px;
+}
+.small {
   font-size: 1.2rem;
   line-height: 1.3;
+}
+.left {
+  text-align: left;
+}
+.button {
+  width: 200px;
+  position: relative;
+}
+.spinner {
+  float: right;
+  position: absolute;
+  right: 0;
+}
+.note {
   margin: 10px 0px;
 }
 .timeout {

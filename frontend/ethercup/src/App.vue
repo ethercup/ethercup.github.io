@@ -3,21 +3,35 @@
 
     <h1>Ethercup</h1>
 
-    <div id="personal" class="container">
-      <b>Your Account:</b>
-      <p>
-        Address: {{ this.account }}<br>
-        Balance: <span style="font-style: italic">{{ this.balance }} ETH</span>
+    <template v-if="hasMetamask">
+      <div id="personal" class="container">
+        <b>Your Account:</b>
+        <p v-if="isSignedInMetamask">
+          Address: {{ this.account }}<br>
+          Balance: <i>{{ this.balance }} ETH</i>
+        </p>
+        <p v-else class="warning">
+          Please sign in Metamask<br>
+          to see your account details
+        </p>
+      </div>
+
+      <Bets
+          v-bind:web3="web3"
+          v-bind:provider="provider"
+          v-bind:account="account"
+          v-bind:balance="balance"
+      />
+    </template>
+    <template v-else>
+      <p class="warning no-metamask">
+        MetaMask browser plugin not found.<br>
+        Please install MetaMask to proceed.
       </p>
-    </div>
-
-    <Bets
-        v-bind:web3="web3"
-        v-bind:provider="provider"
-        v-bind:account="account"
-        v-bind:balance="balance"
-    />
-
+      <a href="https://metamask.io" target="_blank">
+        <img src="./assets/metamask.png" width="50%"/>
+      </a>
+    </template>
   </div>
 </template>
 
@@ -35,9 +49,15 @@ export default {
       web3: null,
       provider: null,
       network: 0,
+      hasMetamask: false,
       account: '',
       accountRefresh: null,
       balance: 0,
+    }
+  },
+  computed: {
+    isSignedInMetamask () {
+      return this.account != ''
     }
   },
   created () {
@@ -47,24 +67,22 @@ export default {
   },
   methods: {
     initWeb3 () {
-      if (typeof web3 === 'undefined') {
-        console.error('web3 not detected...')
-        return
-      }
-      if (web3) {
-        // Use Mist/MetaMask's provider
+      if (typeof web3 !== 'undefined') {
         this.provider = web3.currentProvider
         this.web3 = new Web3(this.provider)
+        this.hasMetamask = true
+      } else {
+        console.log('No web3? You should consider trying MetaMask!')
       }
     },
     updateBalance () {
       this.web3.eth.getBalance(this.account).then(b => {
-        this.balance = Number(this.web3.utils.fromWei(b))
+        this.balance = Number(this.web3.utils.fromWei(b)).toFixed(3)
       })
     },
     getAccount() {
       this.web3.eth.getAccounts().then(acc => {
-        if (acc[0] != this.account) {
+        if (acc !== undefined && acc.length > 0 && acc[0] != this.account) {
           this.account = acc[0]
           this.updateBalance()
         }
@@ -125,6 +143,13 @@ export default {
 p {
   line-height: 2rem;
 }
+.gray {
+  color: #bbb;
+}
+.warning {
+  color: red;
+  font-style: italic;
+}
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -135,5 +160,10 @@ p {
 }
 #personal {
   text-align: left;
+}
+.no-metamask {
+  font-size: 1.8rem;
+  line-height: 3rem;
+  margin: 50px 0px;
 }
 </style>

@@ -19,7 +19,7 @@ contract Bet is usingOraclize, Ownable {
 
   uint8 public matchId;
   string public apiMatchId;
-  string public group;
+  string public matchContext;
   string public p1;
   string public p2;
   bool public isGroupPhase;
@@ -129,6 +129,14 @@ contract Bet is usingOraclize, Ownable {
       _;
   }
 
+  modifier cancelIfTooLateForConfirmation() {
+      if (now > timeSuggestConfirmEnds && winnerConfirmed == false) {
+        cancelInternal()
+      } else {
+        _;
+      }
+  }
+
   /*
     Winner check modifiers
   */
@@ -176,12 +184,8 @@ contract Bet is usingOraclize, Ownable {
 
   modifier startFetchingIfUnstarted() {
       if (isFetchingStarted == false) {
-        if (now <= timeSuggestConfirmEnds) {
           fetchMatchStatus(0); // 0 == fetch now, without delay
           isFetchingStarted = true;
-        } else {
-          cancelInternal()
-        }
       } else {
           _;
       }
@@ -211,7 +215,7 @@ contract Bet is usingOraclize, Ownable {
   constructor(
       uint8 _matchId,
       string _apiMatchId,
-      string _group,
+      string _matchContext,
       string _p1,
       string _p2,
       bool _isGroupPhase,
@@ -226,7 +230,7 @@ contract Bet is usingOraclize, Ownable {
       
       matchId = _matchId;
       apiMatchId = _apiMatchId;
-      group = _group;
+      matchContext = _matchContext;
       p1 = _p1;
       p2 = _p2;
       isGroupPhase = _isGroupPhase;
@@ -414,8 +418,8 @@ contract Bet is usingOraclize, Ownable {
   function confirmWinner(uint8 _winnerAsInt) external
       onlyOwner
       isNotCancelled
-      isSuggestConfirmPhase
       isWinnerSuggested
+      cancelIfTooLateForConfirmation
       isFirstConfirmCall
   {
       require(isValidWinner(_winnerAsInt));
@@ -445,7 +449,7 @@ contract Bet is usingOraclize, Ownable {
   function cancel() public
       onlyOwner
   {
-      cancelInternal()
+      cancelInternal();
   }
 
   function cancelInternal() private
@@ -458,15 +462,25 @@ contract Bet is usingOraclize, Ownable {
       emit BettingCancelled(p1, p2);
   }
 
+  function updateStatus() external
+      isNotCancelled
+      canBeCancelled
+  {
+      if (now > timeSuggestConfirmEnds && winnerConfirmed == false) {
+        cancelInternal()
+      }
+  }
+
   // KOVAN start fetch (enough gas): 142302
   // kOVAN fee transfered to oraclize: 0.0013777
   // KOVAN claim success: 90976, 45976, 29300, 22150
   function claimWinOrDraw() external
       isNotCancelled
       canStartFetch
-      isClaimNotExpired
+      cancelIfTooLateForConfirmation
       startFetchingIfUnstarted
       isWinnerConfirmed
+      isClaimNotExpired
   {
       uint256 payout;
       // Check if msg.sender has bets on winner team
@@ -527,6 +541,7 @@ contract Bet is usingOraclize, Ownable {
       // 0->MAX_FETCH_ATTEMPTS cost more than funded `msg.value`.
       require(msg.value >= 1e16); // 1/100 ether = ~7 dollar
       fetchAttempt = 0;
+      isFetchingStarted = true;
       fetchMatchStatus(0);
   }
 

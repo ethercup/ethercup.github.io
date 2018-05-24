@@ -14,7 +14,7 @@ module.exports = function(deployer, network, accounts) {
   	Bet,
     0,
   	'165069',
-    'A',
+    'Group A', // 1/4 Final, 1/2 Final, 3rd Place, Final
   	'Germany',
   	'Saudi Arabia',
   	true,

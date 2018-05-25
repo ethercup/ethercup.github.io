@@ -1,20 +1,26 @@
 <template>
   <div class="container" id="app">
 
-    <h1>Ethercup</h1>
+    <div class="row">
+      <img src="../static/img/ethercup.png" style="width: 100px;" />
+      <h1>Ethercup</h1>
+    </div>
 
     <template v-if="(hasMetamask && isUsingCorrectNetwork)">
       <div id="personal" class="container">
         <b>Your Account:</b>
         <p v-if="isSignedInMetamask">
-          Address: {{ this.account }}<br>
+          Address: <span style="font-family: monospace;">{{ getShortAddress(this.account) }}</span><br>
           Balance: <i>{{ this.balance }} ETH</i>
         </p>
         <p v-else class="warning">
           Please sign in Metamask<br>
           to see your account details
         </p>
+        <hr>
       </div>
+
+      
 
       <Bets
           v-bind:web3="web3"
@@ -40,6 +46,22 @@
         </p>
       </template>
     </template>
+
+    <!-- footer -->
+    <div class="container">
+      <hr>
+      <p>
+        GitHub: <a href="https://github.com/ethercup/ethercup" target="_blank">https://github.com/ethercup/ethercup</a><br>
+        Powered by the Ethereum blockchain,<br>
+        Web3, Truffle and VueJS.<br>
+        <br>
+        Contact:
+        <a href="mailto:mailatethercup@gmail.com?Subject=Hi%20Ethercup" target="_top">mailatethercup@gmail.com</a>
+        or
+        <a href="https://reddit.com/u/ethercup" target="_blank">/u/ethercup</a>
+        on reddit
+      </p>
+    </div>
   </div>
 </template>
 
@@ -135,6 +157,11 @@ export default {
           console.log('This is an unknown network.')
           return 'Unknown network'
       } 
+    },
+    getShortAddress(address) {
+      if (address != undefined && address.length > 5) {
+        return address.substring(0,6) + "..." + address.substring(address.length-4)  
+      }
     }
   },
   beforeDestroy () {
@@ -146,6 +173,13 @@ export default {
 <style>
 p {
   line-height: 2rem;
+}
+/* skeleton override */
+hr {
+  margin-top: 3.5rem;
+  margin-bottom: 3.5rem;
+  border-width: 0;
+  border-top: 2px solid black;
 }
 .gray {
   color: #bbb;
@@ -163,7 +197,7 @@ p {
   margin-top: 60px;
 }
 #personal {
-  text-align: left;
+  text-align: center;
 }
 .metamask-issue {
   font-size: 1.8rem;

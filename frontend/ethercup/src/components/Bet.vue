@@ -570,9 +570,6 @@ a {
   font-size: 1.2rem;
   line-height: 1.3;
 }
-.left {
-  text-align: left;
-}
 .button {
   width: 200px;
   position: relative;

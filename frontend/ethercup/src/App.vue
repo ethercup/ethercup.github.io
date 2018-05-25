@@ -68,7 +68,7 @@ export default {
       return this.account != ''
     },
     isUsingCorrectNetwork () {
-      return this.networkId == process.env.NETWORK_ID
+      return this.network == process.env.NETWORK_ID
     },
     correctNetwork () {
       return process.env.NETWORK_ID

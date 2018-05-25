@@ -225,10 +225,10 @@ export default {
       isFetchingStarted: false,
       matchFinished: false,
       isWinnerConfirmed: false,
-      myBetsP1: '',
-      myBetsP2: '',
-      totalPlayer1: '',
-      totalPlayer2: '',
+      myBetsP1: '0',
+      myBetsP2: '0',
+      totalPlayer1: '0',
+      totalPlayer2: '0',
       numBetsPlayer1: 0,
       numBetsPlayer2: 0,
       timeBettingOpens: 0,
@@ -318,10 +318,18 @@ export default {
       }
     },
     getLeftBarWidthPool () {
-      return "width: " + ((this.toEther(this.totalPlayer1) / (this.toEther(this.totalPlayer1)+this.toEther(this.totalPlayer2))) * 100) + "%;"
+      if (this.totalPlayer1 != '0' || this.totalPlayer2 != '0') {
+          return "width: " + ((this.toEther(this.totalPlayer1) / (this.toEther(this.totalPlayer1)+this.toEther(this.totalPlayer2))) * 100) + "%;"
+      } else {
+          return "width: 100%; background-color: #bbb;"
+      }
     },
     getLeftBarWidthNum () {
-      return "width: " + ((this.numBetsPlayer1 / (this.numBetsPlayer1+this.numBetsPlayer2)) * 100) + "%;"
+      if (this.numBetsPlayer1 != '0' || this.numBetsPlayer2 != '0') {
+        return "width: " + ((this.numBetsPlayer1 / (this.numBetsPlayer1+this.numBetsPlayer2)) * 100) + "%;"
+      } else {
+        return "width: 100%; background-color: #bbb;"
+      }
     }
   },
   methods: {
@@ -345,6 +353,9 @@ export default {
       this.getWinner()
     },
     toEther (weiString) {
+      if (weiString == '' || weiString == '0') {
+        return 0
+      }
       return Number(this.web3.utils.fromWei(weiString))
     },
     placeBet: async function() {

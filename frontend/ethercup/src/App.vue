@@ -5,7 +5,7 @@
       <img src="../static/img/ethercup.png" style="width: 100px;" />
       <h1>Ethercup</h1>
       <div style="margin-top: -20px;">14 JUNE - 15 JULY</div>
-      <div style="margin-top: 20px">
+      <div style="margin-top: 5px; margin-bottom: 20px">
         <a href="https://github.com/ethercup/ethercup/README.md" target="_blank">
           <i>How it works</i>
         </a>
@@ -192,7 +192,7 @@ p {
 /* skeleton override */
 hr {
   margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   border-width: 0;
   border-top: 2px solid black;
 }

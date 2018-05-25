@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="container">
-      <p style="text-align: left;">
-        Available matches: {{ numBets }}<br>
+      <p>
+        Matches live: {{ numBets }}/60<br>
         <label for="checkbox" style="display: inline; font-weight: 400;">Hide finished matches:</label>
         <input type="checkbox" id="checkbox" v-model="hideFinishedMatches">
       </p>

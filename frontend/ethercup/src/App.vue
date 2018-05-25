@@ -4,8 +4,12 @@
     <div class="row">
       <img src="../static/img/ethercup.png" style="width: 100px;" />
       <h1>Ethercup</h1>
+      <div style="margin-top: -20px;">14 JUNE - 15 JULY</div>
     </div>
 
+    <div class="container">
+      <hr>
+    </div>
     <template v-if="(hasMetamask && isUsingCorrectNetwork)">
       <div id="personal" class="container">
         <b>Your Account:</b>
@@ -20,7 +24,9 @@
         <hr>
       </div>
 
-      
+      <div v-if="info != ''" class="container warning info">
+        {{ info }}
+      </div>
 
       <Bets
           v-bind:web3="web3"
@@ -31,7 +37,7 @@
     </template>
     <template v-else>
       <template v-if="!hasMetamask">
-        <p class="warning no-metamask">
+        <p class="warning metamask-issue">
           MetaMask browser plugin not found.<br>
           Please install MetaMask to proceed.
         </p>
@@ -39,7 +45,7 @@
           <img src="./assets/metamask.png" width="50%"/>
         </a>
       </template>
-      <template v-if="!isUsingCorrectNetwork">
+      <template v-else-if="!isUsingCorrectNetwork">
         <p class="warning metamask-issue">
           Currently, you are on the {{ getNetworkName(network) }}.<br>
           Please switch to the <b>{{ getNetworkName(correctNetwork) }}</b> in Metamask.
@@ -48,17 +54,16 @@
     </template>
 
     <!-- footer -->
-    <div class="container">
+    <div class="container footer">
       <hr>
       <p>
         GitHub: <a href="https://github.com/ethercup/ethercup" target="_blank">https://github.com/ethercup/ethercup</a><br>
-        Powered by the Ethereum blockchain,<br>
-        Web3, Truffle and VueJS.<br>
+        Built with Web3, Truffle and VueJS.<br>
         <br>
         Contact:
         <a href="mailto:mailatethercup@gmail.com?Subject=Hi%20Ethercup" target="_top">mailatethercup@gmail.com</a>
         or
-        <a href="https://reddit.com/u/ethercup" target="_blank">/u/ethercup</a>
+        <a href="https://www.reddit.com/user/ethercup" target="_blank">/u/ethercup</a>
         on reddit
       </p>
     </div>
@@ -79,18 +84,17 @@ export default {
       web3: null,
       provider: null,
       network: 0,
+      isUsingCorrectNetwork: true,
       hasMetamask: false,
       account: '',
       updateInterval: null,
       balance: 0,
+      info: ''
     }
   },
   computed: {
     isSignedInMetamask () {
       return this.account != ''
-    },
-    isUsingCorrectNetwork () {
-      return this.network == process.env.NETWORK_ID
     },
     correctNetwork () {
       return process.env.NETWORK_ID
@@ -126,10 +130,15 @@ export default {
     },
     getNetwork () {
       this.web3.eth.net.getId().then(n => {
-        if (n != this.network) {
+        if (this.network != n) {
           this.network = n
-          if (this.account != '') {
-            this.updateBalance()  
+          if (n == process.env.NETWORK_ID) {
+            this.isUsingCorrectNetwork = true;
+            if (this.account != '') {
+              this.updateBalance()  
+            }
+          } else {
+            this.isUsingCorrectNetwork = false;
           }
         }
       })
@@ -199,9 +208,15 @@ hr {
 #personal {
   text-align: center;
 }
+.info {
+  margin-bottom: 3rem;
+}
 .metamask-issue {
   font-size: 1.8rem;
   line-height: 3rem;
   margin: 50px 0px;
+}
+.footer {
+  margin-top: 60px;
 }
 </style>

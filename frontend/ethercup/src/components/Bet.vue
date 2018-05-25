@@ -186,7 +186,7 @@
         </div>
         <div v-else>
           <p class="warning">
-            Unknown bet status. Please contact admin.
+            Unknown bet status. Please contact the admin.
             <!-- offer refresh button -->
           </p>
         </div>

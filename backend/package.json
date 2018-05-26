@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node scripts/example.js"
+    "start": "node scripts/example.js",
+    "scrape": "node scripts/scrapeMatches.js"
   },
   "author": "",
   "license": "ISC"

@@ -1,0 +1,32 @@
+Argentina,D
+Australia,C
+Belgium,G
+Brazil,E
+Colombia,H
+Costa Rica,E
+Croatia,D
+Denmark,C
+Egypt,A
+England,G
+France,C
+Germany,F
+Iceland,D
+Iran,B
+Japan,H
+Mexico,F
+Morocco,B
+Nigeria,D
+Panama,G
+Peru,C
+Poland,H
+Portugal,B
+Russia,A
+Saudi Arabia,A
+Senegal,H
+Serbia,E
+South Korea,F
+Spain,B
+Sweden,F
+Switzerland,E
+Tunisia,G
+Uruguay,A

@@ -1,5 +1,5 @@
 'use strict'
 module.exports = {
   NODE_ENV: '"production"',
-  NETWORK_ID: 1
+  NETWORK_ID: 1,
 }

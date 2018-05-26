@@ -6,7 +6,7 @@
       <h1>Ethercup</h1>
       <div style="margin-top: -20px;">14 JUNE - 15 JULY</div>
       <div style="margin-top: 5px; margin-bottom: 20px">
-        <a href="https://github.com/ethercup/ethercup/README.md" target="_blank">
+        <a href="https://github.com/ethercup/ethercup/blob/master/README.md" target="_blank">
           <i>How it works</i>
         </a>
       </div>
@@ -20,7 +20,7 @@
       <div id="personal" class="container">
         <b>Your Account:</b>
         <p v-if="isSignedInMetamask">
-          Address: <span style="font-family: monospace;">{{ getShortAddress(this.account) }}</span><br>
+          Address: <span class="monospace">{{ getShortAddress(this.account) }}</span><br>
           Balance: <i>{{ this.balance }} ETH</i>
         </p>
         <p v-else class="warning">
@@ -64,7 +64,8 @@
       <hr>
       <p>
         GitHub: <a href="https://github.com/ethercup/ethercup" target="_blank">https://github.com/ethercup/ethercup</a><br>
-        Built with Web3, Truffle and VueJS.<br>
+        Built on Ethereum.<br>
+        Built with Oraclize, Truffle, Web3, VueJS and football-data.org<br>
         <br>
         Contact:
         <a href="mailto:mailatethercup@gmail.com?Subject=Hi%20Ethercup" target="_top">mailatethercup@gmail.com</a>
@@ -103,6 +104,7 @@ export default {
       return this.account != ''
     },
     correctNetwork () {
+      console.log(process.env.ADDRESS_BET_REGISTRY)
       return process.env.NETWORK_ID
     }
   },
@@ -196,8 +198,15 @@ hr {
   border-width: 0;
   border-top: 2px solid black;
 }
+.monospace {
+  font-family: monospace;
+}
 .gray {
   color: #bbb;
+}
+.success {
+  color: rgb(111, 175, 38);
+  font-style: italic;
 }
 .warning {
   color: red;

@@ -2,7 +2,7 @@
   <div>
     <div class="container">
       <p>
-        Matches live: {{ numBets }}/60<br>
+        Matches live: {{ numBets }}/64<br>
         <label for="checkbox" style="display: inline; font-weight: 400;">Hide finished matches:</label>
         <input type="checkbox" id="checkbox" v-model="hideFinishedMatches">
       </p>
@@ -43,7 +43,7 @@ export default {
     return {
       numBets: 0,
       betRegistry: {
-        address: '0xb09e08f2d8ba53ff54c464f7ec1135a92faea937',
+        address: process.env.ADDRESS_BET_REGISTRY,
         instance: null
       },
       betContract: null,
@@ -53,13 +53,9 @@ export default {
   methods: {
     initBetRegistry () {  
       let betRegistryArtifact = require('../../../../backend/build/contracts/BetRegistry.json')
-      //console.log(betRegistryArtifact)
       let betRegistryContract = contract(betRegistryArtifact)
-      //console.log(betRegistryContract)
-      //fixTruffleContractCompatibilityIssue(betRegistryContract)
 
       betRegistryContract.setProvider(this.provider)
-      //console.log(betRegistryContract)
       this.betRegistry.instance = betRegistryContract.at(this.betRegistry.address)
       //console.log(this.betRegistry.instance)
     },

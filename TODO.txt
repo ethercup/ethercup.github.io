@@ -1,15 +1,14 @@
-
-
+//0x9fec4dcae2627a26bc3abf130258d3a0d57c6961
 
 - revise unit tests
 
 - recalc total payoutPool once winner is decided (some Wei are used for oraclize)
 - BETTER: send some wei in constructor used to invoke some oraclize calls. make limits so oralicze calls don't use more than consructor wei.
 
+
 - 0.001 eth maximal verwenden fuer alle oraclize queries
+
 
 - check TrustBrowser, Cipher, Toshi browser plugins
 
 - what happens when json-path fetch hits empty reponse? or where json-path doesn't exist fully?
-
-- how to properly template my bets in vuejs??

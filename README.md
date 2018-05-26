@@ -39,8 +39,10 @@ The tamper-proof nature of the Ethereum blockchain makes smart contracts the mos
 Let's walk through these scenarios:
 * *The external data provider doesn't deliver any data*:
 	Fetching the match result is retried every 1 hour. In case the smart contract is unable to fetch the match result within 24h, the bet switches to "cancelled" and users can claim full refunds of their bets without paying any fee.
+* *There are too many attempts to fetch the match result from the external data provider*: The bet smart contracts use both a limited number of fetch attemps as well as a limited Ether balance to pay for fetches (they cost a bit of Ether). Once one of those limitations is reached but the timeout is not reached yet, anyone can refund the smart contract and restart fetching match results by calling a special function of any bet smart contract.
 * *The external data provider is broken or even malicious and provides an incorrect match result*:
 	The match result must be confirmed by the owner of the smart contract before payouts are possible. If the owner disapproves the fetched match result, the bet switches to "cancelled" and users can claim full refunds of their bets without paying any fee.
+* *During the worldcup, the Ethereum network might be congested, leading to exorbitant transaction costs (see Cryptokitties example)*: The default gas price is set to 6GWei. In case this proves to be insufficient, the owner can increase the gas price by calling a special purpose function of the smart contract.
 * *The owner (creator of this betting application) is malicious and wants to steal your funds*: Even if I were a scammer, I would not have the power (given the secure smart contract design) to steal a single penny from you. This is what I can do as owner/admin:
 	* Bet on my favorite teams as anyone else can.
     * Confirm a winner: If I don't confirm a winner, the bet will switch to "cancelled" after a timeout of 1 day.
@@ -57,7 +59,12 @@ Deployed smart contracts
 ------------------------
 The UI is making the betting experience much better but in case you want want to interact manually with the bet smart contracts, here are the addresses of deployed smart contracts:
 
-**Bet Registry** (contains the addresses of all bet smart contracts): `<coming soon>`
+**Bet Registry**
+
+(contains the addresses of all bet smart contracts): `<coming soon>`
+
+
 **Bets**:
+
 `<coming soon>`
 

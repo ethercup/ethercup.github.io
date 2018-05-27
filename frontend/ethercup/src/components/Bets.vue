@@ -11,18 +11,21 @@
 
     <!-- Check if hiderFinishedMatches works -->
     <!--<p>TEAM, BETTINGOPEN, LAST X, NEXT X</p>-->
-    <ul>
+    <ul v-if="numBets > 0">
       <Bet
         v-for="n in numBets" :key="n"
+        v-bind:registry="registry"
+        v-bind:contract="contract"
         v-bind:matchId="n-1"
-        v-bind:web3="web3"
-        v-bind:betRegistry="betRegistry.instance"
-        v-bind:betContract="betContract"
         v-bind:account="account"
         v-bind:balance="balance"
         v-bind:hideFinishedMatches="hideFinishedMatches"
+        v-bind:isMetamaskNetworkLoginReady="isMetamaskNetworkLoginReady"
       />
     </ul>
+    <div v-else class="gray" style="font-style: italic;">
+      No bets found...
+    </div>
   </div>
 </template>
 
@@ -30,60 +33,33 @@
 
 <script>
 import Bet from './Bet'
-//import TruffleContract from 'truffle-contract'
-const contract = require('truffle-contract')
 
 export default {
   name: 'Bets',
   components: {
     Bet
   },
-  props: ['web3', 'provider', 'account', 'balance'],
+  props: ['account', 'balance', 'isMetamaskNetworkLoginReady'],
   data () {
     return {
       numBets: 0,
-      betRegistry: {
-        address: process.env.ADDRESS_BET_REGISTRY,
-        instance: null
-      },
-      betContract: null,
-      hideFinishedMatches: true,
+      hideFinishedMatches: false,
+      registry: null,
+      contract: null
     }
   },
   methods: {
-    initBetRegistry () {  
-      let betRegistryArtifact = require('../../../../backend/build/contracts/BetRegistry.json')
-      let betRegistryContract = contract(betRegistryArtifact)
-
-      betRegistryContract.setProvider(this.provider)
-      this.betRegistry.instance = betRegistryContract.at(this.betRegistry.address)
-      //console.log(this.betRegistry.instance)
-    },
-    prepareBets () {
-      // get bets from betregistry
-      this.betRegistry.instance.nextIndex.call().then(nb => {
-        this.numBets = Number(nb)
+    updateNumBets () {
+      this.getNumBets().then(num => {
+        this.numBets = Number(num)
       })
-      
-
-      var betArtifact = require('../../../../backend/build/contracts/Bet.json')
-      this.betContract = contract(betArtifact)
-      this.betContract.setProvider(this.provider)
-    },
-    fixTruffleContractCompatibilityIssue (contract) {
-      if (typeof contract.currentProvider.sendAsync !== "function") {
-          contract.currentProvider.sendAsync = function() {
-              return contract.currentProvider.send.apply(
-                  contract.currentProvider, arguments
-              );
-          };
-      }
-      return contract;
     }
   },
   created () {
-    this.initBetRegistry()
-    this.prepareBets()
+    this.registry = this.getBetRegistryInstance()
+    this.contract = this.getBetContract()
+    console.log("registry" + this.registry + "contract: " + this.contract)
+    this.updateNumBets()
   },
 }
 </script>

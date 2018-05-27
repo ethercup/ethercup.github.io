@@ -497,7 +497,7 @@ contract Bet is usingOraclize, Ownable {
       } else if (winner == Winner.Draw &&
           (betsPlayer1[msg.sender] > 0 || betsPlayer2[msg.sender] > 0))
       {
-          payout = betsPlayer1[msg.sender] + betsPlayer2[msg.sender];
+          payout = betsPlayer1[msg.sender].add(betsPlayer2[msg.sender]).mul(100-FEE_PERCENT).div(100);
           betsPlayer1[msg.sender] = 0;
           betsPlayer2[msg.sender] = 0;
       } else {
@@ -525,6 +525,7 @@ contract Bet is usingOraclize, Ownable {
       msg.sender.transfer(refund);
   }
 
+  // collects unclaimed payouts and dust from wei divisions
   function claimExpired() external
       onlyOwner
       isExpiredPhase

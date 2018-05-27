@@ -102,7 +102,7 @@ async function main() {
   //console.log(await bet.confirmWinner(1, {from: user1}))
   //console.log(await bet.claimExpired({from: user1}))
 
-  console.log(await bet.confirmWinner(3, {from: owner}))
+  //console.log(await bet.confirmWinner(3, {from: owner}))
  
   //bet.claimWinOrDraw({from: owner})
   console.log("BetRegistry nextIndex: " + await betRegistry.nextIndex.call())

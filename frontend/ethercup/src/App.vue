@@ -33,13 +33,13 @@
       <div v-if="info != ''" class="container warning info">
         {{ info }}
       </div>
-
+      
       <Bets
-          v-bind:web3="web3"
-          v-bind:provider="provider"
           v-bind:account="account"
           v-bind:balance="balance"
+          v-bind:isMetamaskNetworkLoginReady="isMetamaskNetworkLoginReady"
       />
+      
     </template>
     <template v-else>
       <template v-if="!hasMetamask">
@@ -53,8 +53,8 @@
       </template>
       <template v-else-if="!isUsingCorrectNetwork">
         <p class="warning metamask-issue">
-          Currently, you are on the {{ getNetworkName(network) }}.<br>
-          Please switch to the <b>{{ getNetworkName(correctNetwork) }}</b> in Metamask.
+          Currently, you are on the {{ getNetworkName(currentNetwork) }}.<br>
+          Please switch to the <b>{{ getNetworkName(targetNetwork) }}</b> in Metamask.
         </p>
       </template>
     </template>
@@ -78,7 +78,8 @@
 </template>
 
 <script>
-import Web3 from 'web3'
+import Helpers from './utils/Helpers.js'
+import { mapGetters, mapState } from 'vuex'
 import Bets from './components/Bets'
 
 export default {
@@ -86,67 +87,61 @@ export default {
   components: {
     Bets
   },
+  mixins: [Helpers],
   data () {
     return {
-      web3: null,
-      provider: null,
-      network: 0,
-      isUsingCorrectNetwork: true,
-      hasMetamask: false,
-      account: '',
       updateInterval: null,
-      balance: 0,
       info: ''
     }
   },
   computed: {
-    isSignedInMetamask () {
-      return this.account != ''
-    },
-    correctNetwork () {
-      console.log(process.env.ADDRESS_BET_REGISTRY)
+    getTargetNetwork () {
       return process.env.NETWORK_ID
-    }
+    },
+    ...mapState({
+      web3: state => state.web3,
+      currentNetwork: 'currentNetwork',
+      targetNetwork: 'targetNetwork',
+      account: 'account',
+      balance: 'balance'
+    }),
+    ...mapGetters({
+      hasMetamask: 'hasMetamask',
+      isUsingCorrectNetwork: 'isUsingCorrectNetwork',
+      isSignedInMetamask: 'isSignedInMetamask',
+      isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady'
+    })
   },
   created () {
     require('dotenv').config();
-    this.initWeb3()
+    this.$store.commit('initWeb3')
+    this.$store.commit('setTargetNetwork', process.env.NETWORK_ID)
+
     this.updateNetworkAndAccount()
   },
   methods: {
-    initWeb3 () {
-      if (typeof web3 !== 'undefined') {
-        this.provider = web3.currentProvider
-        this.web3 = new Web3(this.provider)
-        this.hasMetamask = true
-      } else {
-        console.log('Please install the MetaMask browser plugin to proceed')
+    updateBalance () {
+      if(this.web3.utils.isAddress(this.account)) {
+        this.getBalance(this.account).then(b => {
+          this.balance = Number(this.web3.utils.fromWei(b)).toFixed(3)
+        })
       }
     },
-    updateBalance () {
-      this.web3.eth.getBalance(this.account).then(b => {
-        this.balance = Number(this.web3.utils.fromWei(b)).toFixed(3)
-      })
-    },
-    getAccount() {
-      this.web3.eth.getAccounts().then(acc => {
-        if (acc !== undefined && acc.length > 0 && acc[0] != this.account) {
-          this.account = acc[0].toLowerCase()
+    updateAccount() {
+      this.getAccounts().then(accounts => {
+        if (accounts !== undefined && accounts.length > 0 && accounts[0].toLowerCase() != this.account) {
+          this.account = accounts[0].toLowerCase()
           this.updateBalance()
         }
       })
     },
-    getNetwork () {
-      this.web3.eth.net.getId().then(n => {
+    updateNetwork () {
+      this.getNetwork().then(n => {
         if (this.network != n) {
           this.network = n
-          if (n == process.env.NETWORK_ID) {
-            this.isUsingCorrectNetwork = true;
-            if (this.account != '') {
-              this.updateBalance()  
-            }
-          } else {
-            this.isUsingCorrectNetwork = false;
+          if (this.correctNetwork == n && this.account != '') {
+            this.isUsingCorrectNetwork = true
+              this.updateBalance()   
           }
         }
       })
@@ -154,31 +149,9 @@ export default {
     updateNetworkAndAccount () {
       var that = this
       this.updateInterval = setInterval(function() {
-        that.getAccount()
-        that.getNetwork()
-      }, 200);
-    },
-    getNetworkName (networkId) {
-      switch (networkId) {
-        case 1:
-          return 'Main network'
-        case 2:
-          return 'Morden test network'
-        case 3:
-          return 'Ropsten test network'
-        case 4:
-          return 'Rinkeby test network'
-        case 42:
-          return 'Kovan test network'
-        default:
-          console.log('This is an unknown network.')
-          return 'Unknown network'
-      } 
-    },
-    getShortAddress(address) {
-      if (address != undefined && address.length > 5) {
-        return address.substring(0,6) + "..." + address.substring(address.length-4)  
-      }
+        that.$store.dispatch('updateAccount')
+        that.$store.dispatch('updateCurrentNetwork')
+      }, 200)
     }
   },
   beforeDestroy () {

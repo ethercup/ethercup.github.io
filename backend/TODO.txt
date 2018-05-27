@@ -4,7 +4,7 @@
 - revise unit tests
 
 - recalc total payoutPool once winner is decided (some Wei are used for oraclize)
-- BETTER: send some wei in constructor used to invoke some oraclize calls. make limits so oralicze calls don't use more than consructor wei.
+- BETTER: send some wei in constructor used to invoke some oraclize calls. make limits so oralicze calls don't use more than constructor wei.
 
 - 0.001 eth maximal verwenden fuer alle oraclize queries
 
@@ -13,3 +13,5 @@
 - what happens when json-path fetch hits empty reponse? or where json-path doesn't exist fully?
 
 - how to properly template my bets in vuejs??
+
+- fix payout bug when matchresult=draw. don't forget to deduct fee from payout, otherwise last payour(s) fail coz of insufficient funds in smart contract 

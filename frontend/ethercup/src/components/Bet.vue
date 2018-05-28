@@ -73,43 +73,29 @@
     <div class="row status">
       <div class="eight columns offset-by-two">
 
-
         <!-- CANCELLED -->
 
         <div v-if="isCancelled">
-          <p class="announcement">
-            Bet is cancelled! :(
-          </p>
-          <p class="timeout">
-            Planned match start at:<br>
-            {{ getReadableDate(timeMatchStarts) }}
-          </p>
+          <BetPhaseCancelled
+            :instance="instance"
+            :timeMatchStarts="timeMatchStarts"
+            :hasPayouts="hasPayouts"
+            @claimed="updateContractBetState()"/>
         </div>
 
         <!-- INACTIVE -->
 
         <div v-else-if="isInactive">
-          <p class="announcement">
-            Match is not open yet for placing bets.
-          </p>
-          <p class="times">
-            <span class="matchstart">Bet opens at
-            {{ getReadableDate(timeBettingOpens) }}<br>
-            Match begins at
-            {{ getReadableDate(timeMatchStarts) }}</span>
-          </p>
+          <BetPhaseInactive
+            :timeBettingOpens="timeBettingOpens"
+            :timeMatchStarts="timeMatchStarts"/>
         </div>
 
         <!-- CLAIM EXPIRED -->
 
         <div v-else-if="isClaimExpired">
-          <p class="matchresult announcement">
-            {{ getWinnerPhrase }}
-          </p>
-          <p class="times">
-            <span class="timeout">Payouts expired at<br>
-            {{ getReadableDate(timeClaimsExpire) }}</span>
-          </p>
+          <BetPhaseExpired
+            :getWinnerPhase="getWinnerPhase"/>
         </div>
 
         <!-- BETTING OPEN -->
@@ -124,70 +110,16 @@
             v-bind:timeMatchStarts="timeMatchStarts"
             @bet-placed="updateContractBetState()">
           </BetPhaseOpen>
-
-
-
-          <!--<p class="announcement">
-            Place your bets now!
-          </p>
-          <template v-if="isMetamaskNetworkLoginReady">
-            <p class="note small">
-              Click on a country's flag to<br>
-              select your favorite team.<br>
-            </p>
-            <p v-if="warning != ''" class="warning">
-              {{ warning }}
-            </p>
-            <p v-if="success != ''" class="success">
-              {{ success }}
-            </p>
-            <div class="row">
-              <div class="six columns offset-by-two">
-                <input v-model="betAmount" type="number" step="0.1" min="0" placeholder="Your bet" class="input">
-              </div>
-              <div class="two columns" style="line-height: 4rem; text-align: left;">
-                ETH
-              </div>
-            </div>
-            <div class="row">
-              <div class="eight columns offset-by-two">
-                <button class="button" v-on:click="placeBet()">
-                  Bet
-                  <img v-if="showSpinner" src="../assets/spinner.gif" class="spinner" />
-                </button>
-              </div>
-            </div>
-          </template>
-          <template v-else>
-            <p class="warning">
-              Metamask isn't ready.<br>
-              Please log in Metamask and chose Main Ethereum network.
-            </p>
-          </template>
-          <p class="times">
-            <span class="timeout">
-              Betting closes at {{ getReadableDate(timeBettingCloses) }}
-            </span>
-            <br>
-            <span class="matchstart">Match begins at {{ getReadableDate(timeMatchStarts) }}
-            </span>
-          </p>-->
         </div>
 
         <!-- BETTING CLOSED -->
 
         <div v-else-if="isBettingClosed">
-          <p class="announcement">
-            Betting is closed. Match is beginning shortly...
-          </p>
-          <p class="timeout">
-            Match begins at 
-            {{ getReadableDate(timeMatchStarts) }}
-          </p>
+          <BetPhaseClosed
+            :timeMatchStarts="timeMatchStarts"/>
         </div>
 
         <!-- PAYOUT -->
-
 
         <div v-else-if="isPayout">
           <BetPhasePayout
@@ -198,87 +130,41 @@
             @claimed="getContractState()">
           </BetPhasePayout>
         </div>
-          <!--<p class="matchresult announcement">
-            {{ getWinnerPhrase }}
-          </p>
-          <template v-if="isMetamaskNetworkLoginReady">
-            <p class="note small">
-              The match result is confirmed
-              and payouts can be claimed now!
-            </p>
-            <p v-if="warning != ''" class="warning">
-              {{ warning }}
-            </p>
-            <p v-if="success != ''" class="success">
-              {{ success }}
-            </p>
-            <div class="row" v-if="hasPayouts">
-              <div class="eight columns offset-by-two">
-                <button class="button" v-on:click="claimWinOrDraw()">
-                  Claim payout
-                  <img v-if="showSpinner" src="../assets/spinner.gif" class="spinner" />
-                </button>
-              </div>
-            </div>
-            <div v-else>
-              You don't have any payouts to claim.
-            </div>
-          </template>
-          <template v-else>
-            <p class="warning">
-              Metamask isn't ready.<br>
-              Please log in Metamask and chose Main Ethereum network.
-            </p>
-          </template>
-          <p class="times">
-            <span class="timeout">
-              Payouts expire at<br>
-              {{ getReadableDate(timeClaimsExpire) }}
-            </span>
-          </p>
-        </div>-->
 
         <!-- WAIT CONFIRM -->
 
         <div v-else-if="isWaitingForConfirm">
-          <p class="announcement">
-            Match result was successfully fetched<br>
-            and now has to be confirmed. Looks like...
-            <span class="matchresult">{{ getWinnerPhrase }}</span>
-          </p>
-          <p class="timeout">
-            Match result must be confirmed<br>
-            until {{ getReadableDate(timeSuggestConfirmEnds) }}
-          </p>
+          <BetPhaseWaitForConfirm
+            :timeSuggestConfirmEnds="timeSuggestConfirmEnds"
+            :getWinnerPhrase="getWinnerPhrase"/>
+        </div>
+
+        <!-- TOO LATE FOR CONFIRM -->
+
+        <div v-else-if="isTooLateForConfirm">
+          <BetPhaseTooLateConfirm
+            :instance="instance"
+            :timeSuggestConfirmEnds="timeSuggestConfirmEnds"
+            @claimed="getContractState()"/>
         </div>
 
         <!-- MATCH IN PLAY -->
 
         <div v-else-if="isPlayingForSure">
-          <p class="announcement">
-            Match is in play... <img style="margin-bottom: -2px" src="data:image/svg+xml;utf8;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iaXNvLTg4NTktMSI/Pgo8IS0tIEdlbmVyYXRvcjogQWRvYmUgSWxsdXN0cmF0b3IgMTYuMC4wLCBTVkcgRXhwb3J0IFBsdWctSW4gLiBTVkcgVmVyc2lvbjogNi4wMCBCdWlsZCAwKSAgLS0+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4PSIwcHgiIHk9IjBweCIgd2lkdGg9IjE2cHgiIGhlaWdodD0iMTZweCIgdmlld0JveD0iMCAwIDcyLjM3MSA3Mi4zNzIiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDcyLjM3MSA3Mi4zNzI7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPGc+Cgk8cGF0aCBkPSJNMjIuNTcsMi42NDhjLTQuNDg5LDEuODItOC41MTcsNC40OTYtMTEuOTcxLDcuOTQ5QzcuMTQ0LDE0LjA1MSw0LjQ3MSwxOC4wOCwyLjY1LDIyLjU2OEMwLjg5MiwyNi45MDQsMCwzMS40ODYsMCwzNi4xODYgICBjMCw0LjY5OSwwLjg5Miw5LjI4MSwyLjY1LDEzLjYxNWMxLjgyMSw0LjQ4OSw0LjQ5NSw4LjUxOCw3Ljk0OSwxMS45NzFjMy40NTQsMy40NTUsNy40ODEsNi4xMjksMTEuOTcxLDcuOTQ5ICAgYzQuMzM2LDEuNzYsOC45MTcsMi42NDksMTMuNjE3LDIuNjQ5YzQuNywwLDkuMjgtMC44OTIsMTMuNjE2LTIuNjQ5YzQuNDg4LTEuODIsOC41MTgtNC40OTQsMTEuOTcxLTcuOTQ5ICAgYzMuNDU1LTMuNDUzLDYuMTI5LTcuNDgsNy45NDktMTEuOTcxYzEuNzU4LTQuMzM0LDIuNjQ4LTguOTE2LDIuNjQ4LTEzLjYxNWMwLTQuNy0wLjg5MS05LjI4Mi0yLjY0OC0xMy42MTggICBjLTEuODItNC40ODgtNC40OTYtOC41MTgtNy45NDktMTEuOTcxcy03LjQ3OS02LjEyOS0xMS45NzEtNy45NDlDNDUuNDY3LDAuODkxLDQwLjg4NywwLDM2LjE4NywwICAgQzMxLjQ4NywwLDI2LjkwNiwwLjg5MSwyMi41NywyLjY0OHogTTkuMDQ0LDUxLjQxOWMtMS43NDMtMS4wOTQtMy4zNDktMi4zNTQtNC43NzEtMy44MzhjLTIuMTcyLTYuMTEyLTIuNTQtMTIuNzI5LTEuMTAxLTE5LjAxICAgYzAuNjc3LTEuMzM1LDEuNDQ3LTIuNjE3LDIuMzE4LTMuODQ1YzAuMjY5LTAuMzc5LDAuNTE4LTAuNzc0LDAuODA2LTEuMTQybDguMTY2LDQuODMyYzAsMC4wNjQsMCwwLjEzNCwwLDAuMjA1ICAgYy0wLjAyMSw0LjM5MiwwLjQyNSw4Ljc1MiwxLjMxMywxMy4wNDljMC4wMDMsMC4wMiwwLjAwNiwwLjAzMSwwLjAxLDAuMDQ5bC02LjMzMyw5LjkzQzkuMzE0LDUxLjU3OSw5LjE3Nyw1MS41MDMsOS4wNDQsNTEuNDE5eiAgICBNMzMuMzI0LDY4LjIwNmMxLjQwOSwwLjcxOSwyLjg1OCwxLjMyNiw0LjM0NywxLjgyYy02LjMyNSwwLjI3NS0xMi43MTMtMS4yMDctMTguMzYtNC40NDdMMzMsNjguMDE4ICAgQzMzLjEwNSw2OC4wODUsMzMuMjEyLDY4LjE0OSwzMy4zMjQsNjguMjA2eiBNMzMuMjc0LDY1LjczNUwxNy4xMiw2Mi44NTZjLTEuODktMi4yOTUtMy41OS00LjcyMy01LjA1MS03LjMxOCAgIGMtMC4zNzItMC42Ni0wLjc4Ny0xLjMwMS0xLjEwMi0xLjk5bDYuMzI3LTkuOTJjMC4xNCwwLjAzNSwwLjI5NiwwLjA3MiwwLjQ3MywwLjExOWMzLjk1OCwxLjA1OSw3Ljk4NiwxLjgxMiwxMi4wNDIsMi40MDIgICBjMC4yMzcsMC4wMzMsMC40MzUsMC4wNjIsMC42MDQsMC4wOGw3LjU4NCwxMy4xMTNjLTEuMzE2LDEuODUtMi42NDcsMy42OS00LjAwNyw1LjUxQzMzLjc2NCw2NS4xNTUsMzMuNTI0LDY1LjQ0NiwzMy4yNzQsNjUuNzM1eiAgICBNNjAuMTUsNjAuMTQ5Yy0xLjI4NiwxLjI4Ny0yLjY1MSwyLjQ0Ny00LjA4LDMuNDgxYy0wLjIzNy0xLjg5NC0wLjY0Ni0zLjc1LTEuMjIzLTUuNTYzbDguMDkyLTE1LjA5NiAgIGMyLjIyOS0xLjAxNSw0LjM3OS0yLjE2Niw2LjM3NS0zLjU5M2MwLjI2MS0wLjE4NSwwLjQ3OC0wLjM5MiwwLjY0Ni0wLjYxOEM2OS4zNzQsNDYuNTYxLDY2LjEwNCw1NC4xOTYsNjAuMTUsNjAuMTQ5eiAgICBNNTkuNzkxLDQwLjU3MWMwLjMwMSwwLjU3NCwwLjU5OCwxLjE1NCwwLjg5NiwxLjc0MmwtNy44MTYsMTQuNThjLTAuMDQ1LDAuMDEtMC4wODgsMC4wMi0wLjEzMywwLjAyNiAgIGMtNC4yMjUsMC43ODktOC40ODQsMS4yMDktMTIuNzc5LDEuMjI5bC03LjgtMTMuNDg3YzEuMjE0LTIuMjU0LDIuNDE3LTQuNTE3LDMuNjEtNi43ODFjMC44MS0xLjUzNiwxLjYwNi0zLjA4MiwyLjQwMS00LjYyNyAgIGwxNi4xNDMtMS42NThDNTYuMjksMzQuNDk1LDU4LjE2MywzNy40NTcsNTkuNzkxLDQwLjU3MXogTTU2LjUxNiwyMy4yNzdjLTAuNzY2LDIuMDIzLTEuNTg2LDQuMDI1LTIuNDAxLDYuMDMxbC0xNS43MjYsMS42MTUgICBjLTAuMTg4LTAuMjQ4LTAuMzgzLTAuNDkyLTAuNTg4LTAuNzI1Yy0xLjg1Ny0yLjEwMy0zLjcyNi00LjE5My01LjU5Mi02LjI4OWMwLjAxNy0wLjAyMSwwLjAzNC0wLjAzNywwLjA1MS0wLjA1NiAgIGMtMC43NTMtMC43NTItMS41MDgtMS41MDQtMi4yNjEtMi4yNThsNC4zNzgtMTMuMTgxYzAuMzAyLTAuMDgsMC42MDYtMC4xNDcsMC45MTMtMC4xOGMyLjM4LTAuMjQyLDQuNzYzLTAuNTE2LDcuMTQ5LTAuNjU0ICAgYzEuNDYxLTAuMDgyLDIuOTMtMC4xMjksNC40MTYtMC4wMjRsMTAuODMyLDEyLjIwOUM1Ny4zMTQsMjAuOTQzLDU2Ljk1LDIyLjEyNCw1Ni41MTYsMjMuMjc3eiBNNjAuMTUsMTIuMjIxICAgYzIuOTg4LDIuOTksNS4zMDIsNi40MDIsNi45MzgsMTAuMDQ3Yy0yLjAyNC0xLjM5My00LjE4OC0yLjUzOS02LjQ2My0zLjQ3M2MtMC4zNTQtMC4xNDYtMC43MTctMC4yNzUtMS4wODYtMC40MDJMNDguODc3LDYuMzc2ICAgYzAuMDc0LTAuNTE5LDAuMTEzLTEuMDM5LDAuMTI5LTEuNTYzQzUzLjA2Miw2LjQ2NCw1Ni44NjQsOC45MzYsNjAuMTUsMTIuMjIxeiBNMjUuMzM0LDQuMTgyYzAuMDQyLDAuMDMxLDAuMDYyLDAuMDU3LDAuMDg2LDAuMDY0ICAgYzIuNDM3LDAuODQyLDQuNjU0LDIuMDgyLDYuNzQ0LDMuNTUzbC00LjA5LDEyLjMxN2MtMC4wMjEsMC4wMDYtMC4wNDEsMC4wMTItMC4wNjEsMC4wMjFjLTAuODM3LDAuMzQ2LTEuNjksMC42NTYtMi41MTQsMS4wMzEgICBjLTMuMzk1LDEuNTQzLTYuNzA1LDMuMjUyLTkuODIzLDUuMzAxbC04LjA3MS00Ljc3NWMwLjAxMi0wLjI1MiwwLjA1NS0wLjUwOCwwLjE0MS0wLjczNmMwLjU0Mi0xLjQ0NCwxLjA3NS0yLjg5NiwxLjY4OC00LjMxMSAgIGMwLjQ3Mi0xLjA5LDEuMDEtMi4xNDMsMS41OTctMy4xNzJjMC4zODQtMC40MjQsMC43ODItMC44NDQsMS4xOTItMS4yNTRjMy44MzMtMy44MzIsOC4zNjMtNi41NTMsMTMuMTg2LTguMTYyICAgQzI1LjM4NCw0LjA5OCwyNS4zNTgsNC4xMzksMjUuMzM0LDQuMTgyeiIgZmlsbD0iIzAwMDAwMCIvPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+CjxnPgo8L2c+Cjwvc3ZnPgo=" />
-            <br>
-            Good luck!
-          </p>
-          <p class="timeout">
-            Match begin was at
-            {{ getReadableDate(timeMatchStarts) }}
-          </p>
+          <BetPhaseMatchInPlay
+            :timeMatchStarts="timeMatchStarts"
+          />
         </div>
 
         <!-- IS FETCHING -->
 
         <div v-else-if="isFetching">
-          <p class="announcement">
-            Match result is currently being fetched...
-          </p>
-          <p class="timeout">
-            Match result to be confirmed until:<br>
-            {{ getReadableDate(timeSuggestConfirmEnds) }}
-          </p>
+          <BetPhaseFetching
+            :timeSuggestConfirmEnds="timeSuggestConfirmEnds"/>
         </div>
 
         <!-- SHOULD START FETCH -->
+
         <div v-else-if="isShouldStartFetch">
           <BetPhaseShouldStartFetch
             v-bind:instance="instance"
@@ -293,27 +179,33 @@
         <!-- UNKNOWN -->
 
         <div v-else>
-          <p class="warning announcement">
-            Unknown bet status. Please contact the admin.
-            <!-- offer refresh button -->
-          </p>
+          <BetPhaseUnknown
+            :timeMatchStarts="timeMatchStarts"/>
         </div>
       </div>
     </div>
-    <div class="row monospace" style="color: #bbb">
-      {{ address }}
+    <div class="row monospace">
+      <a v-bind:href="etherscanURL" target="_blank" class="gray">
+        {{ address }}
+      </a>
     </div>
   </li>
 </template>
 
-
-
-
 <script>
 import { mapState, mapGetters } from 'vuex'
+import BetPhaseCancelled from './phases/BetPhaseCancelled.vue'
+import BetPhaseMatchInPlay from './phases/BetPhaseMatchInPlay.vue'
+import BetPhaseExpired from './phases/BetPhaseExpired.vue'
+import BetPhaseInactive from './phases/BetPhaseInactive.vue'
 import BetPhasePayout from './phases/BetPhasePayout.vue'
 import BetPhaseOpen from './phases/BetPhaseOpen.vue'
+import BetPhaseClosed from './phases/BetPhaseClosed.vue'
 import BetPhaseShouldStartFetch from './phases/BetPhaseShouldStartFetch.vue'
+import BetPhaseWaitForConfirm from './phases/BetPhaseWaitForConfirm'
+import BetPhaseTooLateConfirm from './phases/BetPhaseTooLateConfirm.vue'
+import BetPhaseUnknown from './phases/BetPhaseUnknown.vue'
+import BetPhaseFetching from './phases/BetPhaseFetching.vue'
 
 const monthNames = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
@@ -322,7 +214,7 @@ const monthNames = ["January", "February", "March", "April", "May", "June",
 export default {
   name: 'Bets',
   components: {
-    BetPhasePayout, BetPhaseOpen, BetPhaseShouldStartFetch
+    BetPhaseCancelled, BetPhaseMatchInPlay, BetPhaseExpired, BetPhaseInactive, BetPhasePayout, BetPhaseOpen, BetPhaseClosed, BetPhaseShouldStartFetch, BetPhaseWaitForConfirm, BetPhaseTooLateConfirm, BetPhaseFetching, BetPhaseUnknown
   },
   props: ['matchId', 'registryInstance', 'hideFinishedMatches'],
   data () {
@@ -368,6 +260,9 @@ export default {
     ...mapGetters({
       isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady'
     }),
+    etherscanURL () {
+      return process.env.ETHERSCAN_URL + this.address + process.env.ETHERSCAN_APPENDIX
+    },
     unit () {
       return 'ETH'
     },
@@ -390,7 +285,7 @@ export default {
       return !(this.hideFinishedMatches && this.matchFinished)
     },
     showBetStats () {
-      return !(this.isCancelled || this.isInactive || this.isClaimExpired)
+      return !(this.isInactive || this.isClaimExpired)
     },
     isCancelled: function() {
       return this.rawStatus == "0"
@@ -423,6 +318,13 @@ export default {
         this.isWinnerSuggested == true &&
         this.isWinnerConfirmed == false &&
         this.getNow < this.timeSuggestConfirmEnds
+    },
+    isTooLateForConfirm: function () {
+      console.log("call to isTooLateForConfirm")
+      return this.matchFinished == true &&
+        this.isWinnerSuggested == true &&
+        this.isWinnerConfirmed == false &&
+        this.getNow >= this.timeSuggestConfirmEnds
     },
     isPlayingForSure: function () {
       console.log("call to isPlayingForSure")
@@ -602,17 +504,15 @@ export default {
         this.getContractState()
       })
     })
-  }
-  /*watch: {
+  },
+  watch: {
     account: function (newAccount) {
-      console.log("watcher called")
       this.getMyBetsP1()
       this.getMyBetsP2()
     }
-  }*/
+  }
 }
 </script>
-
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
@@ -624,10 +524,6 @@ ul {
 li {
   display: inline-block;
   margin: 0 10px;
-}
-a {
-  color
-  : #42b983;
 }
 .bet {
   margin: 15px 0px;
@@ -655,10 +551,6 @@ a {
   background-color: rgb(207, 255, 168);
   height: 8px;
 }
-.matchresult {
-  color: rgb(111, 175, 38);
-  font-style: italic;
-}
 .status {
   margin-top: 25px;
 }
@@ -669,15 +561,6 @@ a {
 .input {
   width: 100%;
   margin-bottom: 0.5rem;
-}
-.button {
-  width: 100%;
-  position: relative;
-}
-.spinner {
-  float: right;
-  position: absolute;
-  right: 0;
 }
 .note {
   margin: 20px 0px;

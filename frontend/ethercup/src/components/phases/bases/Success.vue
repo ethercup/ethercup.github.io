@@ -14,5 +14,6 @@ export default {
 p {
   font-style: italic;
   color: rgb(111, 175, 38);
+  margin-bottom: 1.5rem;
 }
 </style>

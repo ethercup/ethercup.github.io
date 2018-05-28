@@ -1,22 +1,18 @@
 <template>
   <div>
     <Announcement>
-      <span style="color: rgb(111, 175, 38);">
-        {{ getWinnerPhrase }}
-      </span>
+      Bet is cancelled!
     </Announcement>
 
     <template v-if="(isMetamaskNetworkLoginReady && hasPayouts)">
       <Note>
-        The match result is confirmed
-        and payouts can be claimed now!
+        The match is cancelled but you can<br>
+        claim your refunds now!
       </Note>
-      <ActionClaimWinOrDraw
-        :instance="instance"
-        :caller="2"
-      >
-        Claim payout
-      </ActionClaimWinOrDraw>
+      <ActionClaimRefund
+        :instance="instance">
+        Claim refund
+      </ActionClaimRefund>
     </template>
     <template v-else>
       <template v-if="!isMetamaskNetworkLoginReady">
@@ -27,36 +23,36 @@
       </template>
       <template v-else-if="!hasPayouts">
         <Warning>
-          Your account has no payouts to claim.
+          Your account has no refunds to claim.
         </Warning>
       </template>
     </template>
 
     <Times>
-      <TimeTimeout>
-        Payouts expire at {{ getReadableDate(timeClaimsExpire) }}
-      </TimeTimeout>
+      <TimeMatchstart>
+        Planned match begin at {{ getReadableDate(timeMatchStarts) }}
+      </TimeMatchstart>
     </Times>
   </div>
 </template>
 
 <script>
-  import { mapGetters } from 'vuex'
+  import { mapGetters} from 'vuex'
   import Helpers from '../../utils/Helpers.js'
+  import ActionClaimRefund from './bases/ActionClaimRefund.vue'
   import Announcement from './bases/Announcement.vue'
   import Note from './bases/Note.vue'
   import Warning from './bases/Warning.vue'
-  import ActionClaimWinOrDraw from './bases/ActionClaimWinOrDraw.vue'
   import Times from './bases/Times.vue'
-  import TimeTimeout from './bases/TimeTimeout.vue'
+  import TimeMatchstart from './bases/TimeMatchstart.vue'
 
   export default {
-    name: 'BetPhasePayout',
+    name: 'BetPhaseCancelled',
     mixins: [Helpers],
     components: {
-      Announcement, Note, Warning, ActionClaimWinOrDraw, Times, TimeTimeout
+      Announcement, Note, Warning, ActionClaimRefund, Times, TimeMatchstart
     },
-    props: ['instance', 'timeClaimsExpire','hasPayouts', 'getWinnerPhrase'],
+    props: ['instance', 'timeMatchStarts', 'hasPayouts'],
     computed: {
       ...mapGetters({
         isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady'
@@ -67,11 +63,4 @@
 </script>
 
 <style scoped>
-.timeout {
-  color: orange;
-}
-button {
-  width: 100%;
-  position: relative;
-}
 </style>

@@ -12,6 +12,6 @@ export default {
 
 <style scoped>
 span {
-  color: green;
+  color: rgb(111, 175, 38);
 }
 </style>

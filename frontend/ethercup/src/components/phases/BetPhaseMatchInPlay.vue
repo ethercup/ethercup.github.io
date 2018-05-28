@@ -15,15 +15,17 @@
 </template>
 
 <script>
+  import Helpers from '../../utils/Helpers.js'
   import Announcement from './bases/Announcement.vue'
   import Times from './bases/Times.vue'
   import TimeMatchstart from './bases/TimeMatchstart.vue'
 
   export default {
     name: 'BetPhaseMatchInPlay',
+    mixins: [Helpers],
     components: {
       Announcement, Times, TimeMatchstart
-    }
+    },
     props: ['timeMatchStarts']
   }
 

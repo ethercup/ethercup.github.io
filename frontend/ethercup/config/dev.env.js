@@ -8,5 +8,7 @@ module.exports = merge(prodEnv, {
   ADDRESS_BET_REGISTRY: '"0x9540465c237EfB0C45a27741a845Ecb1558b878B"',
   GAS_DEFAULT: 170000,
   GAS_BET: 90000,
-  GASPRICE_DEFAULT: 6e9
+  GASPRICE_DEFAULT: 6e9,
+  ETHERSCAN_URL: '"https://kovan.etherscan.io/address/"',
+  ETHERSCAN_APPENDIX: '"#code"'
 })

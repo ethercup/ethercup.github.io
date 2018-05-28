@@ -27,11 +27,14 @@
 
 <script>
 import { mapState } from 'vuex'
-import Success from '../bases/Success.vue'
-import Warning from '../bases/Warning.vue'
+import Success from './Success.vue'
+import Warning from './Warning.vue'
 
 export default {
   name: 'ActionBet',
+  components: {
+    Success, Warning
+  },
   props: ['instance', 'p1', 'p2', 'betTeam'],
   data () {
     return {
@@ -125,6 +128,24 @@ export default {
 button {
   width: 100%;
   position: relative;
+  color: white;
+  border: none;
+  background-color: #628c47;
+}
+button:focus {
+  color: white;
+  border: none;
+}
+button:hover {
+  color: white;
+  border: none;
+  background-color: rgb(76, 109, 55);
+}
+.spinner {
+  float: right;
+  position: absolute;
+  right: 5px;
+  bottom: 1px; /* centers spinner */
 }
 .unit {
   line-height: 4rem;

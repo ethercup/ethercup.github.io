@@ -1,18 +1,18 @@
 <template>
   <div>
     <Announcement>
-      Is the match over? If yes,<br>
-      let's start fetching the match result.
+      Unfortunately, the admin did not confirm<br>
+      the match result in time.
     </Announcement>
 
     <template v-if="isMetamaskNetworkLoginReady">
       <Note>
-        Click the Activate button to start fetching. Depending
-        on the external data provider, this may take a while...
+        Feel free to activate the smart contract<br>
+        so that you can claim your refund.
       </Note>
       <ActionClaimWinOrDraw
         :instance="instance"
-        :caller="0"
+        :caller="1"
       >
         Activate
       </ActionClaimWinOrDraw>
@@ -26,7 +26,7 @@
 
     <Times>
       <TimeTimeout>
-        Match result must be fetched and confirmed until<br>
+        Confirmation of match result was due at<br>
         {{ getReadableDate(timeSuggestConfirmEnds) }}
       </TimeTimeout>
     </Times>
@@ -43,7 +43,7 @@
   import TimeTimeout from './bases/TimeTimeout.vue'
 
   export default {
-    name: 'BetPhaseShouldStartFetch',
+    name: 'BetPhaseTooLateConfirm',
     mixins: [Helpers],
     components: {
       Announcement, Note, ActionClaimWinOrDraw, Times, TimeTimeout

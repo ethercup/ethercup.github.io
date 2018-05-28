@@ -32,8 +32,8 @@ The owner/admin of the smart contracts is the only person, who can confirm the m
 
 You can check the smart contract implementation yourself to decide if you want to trust this design.
 
-Handling of special scenarios
------------------------------
+Handling of bad scenarios
+-------------------------
 The tamper-proof nature of the Ethereum blockchain makes smart contracts the most trusted part of Ethercup. However, some aspects, i.e. fetching of the match result and confirmation by the admin, introduce human error and sources of potential failure.
 
 Let's walk through these scenarios:
@@ -43,11 +43,12 @@ Let's walk through these scenarios:
 * *The external data provider is broken or even malicious and provides an incorrect match result*:
 	The match result must be confirmed by the owner of the smart contract before payouts are possible. If the owner disapproves the fetched match result, the bet switches to "cancelled" and users can claim full refunds of their bets without paying any fee.
 * *During the worldcup, the Ethereum network might be congested, leading to exorbitant transaction costs (see Cryptokitties example)*: The default gas price is set to 6GWei. In case this proves to be insufficient, the owner can increase the gas price by calling a special purpose function of the smart contract.
-* *The owner (creator of this betting application) is malicious and wants to steal your funds*: Even if I were a scammer, I would not have the power (given the secure smart contract design) to steal a single penny from you. This is what I can do as owner/admin:
+* *The owner (creator of Ethercup) is malicious and wants to steal your funds*: Even if I were a scammer, I would not have the power (given the secure smart contract design) to steal a single penny from you. This is what I can do as owner/admin:
 	* Bet on my favorite teams as anyone else can.
     * Confirm a winner: If I don't confirm a winner, the bet will switch to "cancelled" after a timeout of 1 day.
     * Cancel a bet: In case I haven't confirmed a fetched match result yet, I can cancel the bet at any previous stage. I will make use of this power when a match is postponed or any other bad event happens. If the bet is switched to "cancelled" you can claim full refunds of your bets without paying any fee.
     * Change the UI: I built the UI to let you interact with the bet smart contracts in a more convenient way. In case you don't trust the UI (source code is open sourced) and you still think that I could be a scammer, you don't have to use the UI. Feel free to call the smart contracts functions yourself, e.g. by using Ethereum's Mist browser. You can find the smart contract addresses at the bottom of every bet (in the UI) and at the end of this page.
+ * *The owner (creator of Ethercup) is replacing the source code or address displayed in the UI in the last second*: I will verify each smart contract I deploy on `etherscan.io`. This means that if you browse a bet smart contract by its address on `etherscan.io`, you will notice a verification checkmark and the corresponding source code of the smart contract. This way you can be sure that behind a bet contract address is indeed the functionality I promise.
 
 Other things to note
 --------------------

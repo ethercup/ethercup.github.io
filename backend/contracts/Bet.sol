@@ -462,6 +462,7 @@ contract Bet is usingOraclize, Ownable {
   {
       status = Status.Cancelled;
       payoutPool = totalPlayer1.add(totalPlayer2);
+      remainingPayoutPool = payoutPool;
 
       emit BettingCancelled(p1, p2);
   }

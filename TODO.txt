@@ -12,3 +12,7 @@
 - check TrustBrowser, Cipher, Toshi browser plugins
 
 - what happens when json-path fetch hits empty reponse? or where json-path doesn't exist fully?
+
+- put etherscan verification on workflow, maybe as link in UI
+
+- add license to files

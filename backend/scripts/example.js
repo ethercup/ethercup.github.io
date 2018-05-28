@@ -48,7 +48,7 @@ async function main() {
   const migrationsAddress = '0x9866102e9ee2c5d668bf70c8f50647fb725e4b0c'
 
   const betRegistryAddress = '0x9540465c237EfB0C45a27741a845Ecb1558b878B'
-  const betAddress = '0xba392efa06b871daf6a0ffa716d1864e3e0b51ed'
+  const betAddress = '0x94750fd410d863d9bee95a5cbe358e630575c004'
 
   const owner = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9'.toLowerCase() //acc1
   const user1 = '0xCE1834593259431E36b3F7b68655A88d8Bf6ffca'.toLowerCase() //acc2
@@ -125,6 +125,7 @@ async function main() {
   console.log("queryGoalsP2: " + await bet.queryGoalsP2.call())  
   console.log("matchFinished: " + await bet.matchFinished.call())
   console.log("fetchAttempt: " + await bet.fetchAttempt.call())
+  console.log("isFetchFundingNeeded: " + await bet.isFetchFundingNeeded.call())
   
   console.log("timeBettingOpens: " + await bet.timeBettingOpens.call())
   console.log("timeBettingCloses: " + await bet.timeBettingCloses.call())

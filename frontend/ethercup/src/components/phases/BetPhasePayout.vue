@@ -1,73 +1,66 @@
 <template>
-  <BaseBetPhase>
-
-    <template slot="header">
+  <div>
+    <Announcement>
       <span style="color: rgb(111, 175, 38);">
         {{ getWinnerPhrase }}
       </span>
-    </template>
+    </Announcement>
 
-    <template slot="main">
-      <template v-if="isMetamaskNetworkLoginReady">
-        <Note>
-          The match result is confirmed
-          and payouts can be claimed now!
-        </Note>
-        <Warning v-if="warning != ''">
-          {{ warning }}
-        </Warning>
-        <Success v-if="success != ''">
-          {{ success }}
-        </Success>
-        <div class="row" v-if="hasPayouts">
-          <div class="eight columns offset-by-two">
-            <button class="button button-primary" v-on:click="claimWinOrDraw()">
-              Claim payout
-              <img v-if="isWaiting" src="../../assets/spinner.gif" class="spinner" />
-            </button>
-          </div>
-        </div>
-        <div v-else>
-          You don't have any payouts to claim.
-        </div>
-      </template>
-      <template v-else>
+    <template v-if="(isMetamaskNetworkLoginReady && hasPayouts)">
+      <Note>
+        The match result is confirmed
+        and payouts can be claimed now!
+      </Note>
+      <ActionClaimWinOrDraw
+        v-bind:instance="instance"
+      >
+        Claim payout
+      </ActionClaimWinOrDraw>
+    </template>
+    <template v-else>
+      <template v-if="!isMetamaskNetworkLoginReady">
         <Warning>
           Metamask isn't ready.<br>
           Please log in Metamask and chose Main Ethereum network.
         </Warning>
       </template>
+      <template v-else-if="!hasPayouts">
+        <Warning>
+          Your account has no payouts to claim.
+        </Warning>
+      </template>
     </template>
 
-    <template slot="times">
-      <Time class="timeout">
+    <Times>
+      <TimeTimeout>
         Payouts expire at<br>
         {{ getReadableDate(timeClaimsExpire) }}
-      </Time>
-    </template>
-
-  </BaseBetPhase>
+      </TimeTimeout>
+    </Times>
+  </div>
 </template>
 
 <script>
+  import { mapGetters } from 'vuex'
   import Helpers from '../../utils/Helpers.js'
-  import BaseBetPhase from './BaseBetPhase.vue'
-  import Note from '../bases/Note.vue'
-  import Time from '../bases/Time.vue'
+  import Announcement from './bases/Announcement.vue'
+  import Note from './bases/Note.vue'
+  import Warning from './bases/Warning.vue'
+  import ActionClaimWinOrDraw from './bases/ActionClaimWinOrDraw.vue'
+  import Times from './bases/Times.vue'
+  import TimeTimeout from './bases/TimeTimeout.vue'
 
   export default {
     name: 'BetPhasePayout',
     mixins: [Helpers],
     components: {
-      BaseBetPhase, Note, Time
+      Announcement, Note, Warning, ActionClaimWinOrDraw, Times, TimeTimeout
     },
-    props: ['timeClaimsExpire', 'isMetamaskNetworkLoginReady', 'hasPayouts', 'getWinnerPhrase'],
-    data () {
-      return {
-        warning: '',
-        success: '',
-        isWaiting: false,
-      }
+    props: ['instance', 'timeClaimsExpire','hasPayouts', 'getWinnerPhrase'],
+    computed: {
+      ...mapGetters({
+        isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady'
+      })
     }
   }
 

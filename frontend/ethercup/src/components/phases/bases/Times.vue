@@ -1,18 +1,18 @@
 <template>
-  <div>
+  <p>
     <slot></slot>
-  </div>
+  </p>
 </template>
 
 <script>
 export default {
-  name: 'Time',
-  props: ['type']
+  name: 'Times'
 }
 </script>
 
 <style scoped>
-div {
+p {
   font-style: italic;
+  margin: 20px 0px;
 }
 </style>

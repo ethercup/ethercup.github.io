@@ -116,9 +116,13 @@
 
         <div v-else-if="isBettingOpen">
           <BetPhaseOpen
+            v-bind:instance="instance"
+            v-bind:p1:"p1"
+            v-bind:p2:"p2"
+            v-bind:betTeam="betTeam"
             v-bind:timeBettingCloses="timeBettingCloses"
             v-bind:timeMatchStarts="timeMatchStarts"
-            v-bind:isMetamaskNetworkLoginReady="isMetamaskNetworkLoginReady">
+            @bet-placed="updateContractBetState()">
           </BetPhaseOpen>
 
 
@@ -187,10 +191,11 @@
 
         <div v-else-if="isPayout">
           <BetPhasePayout
+            v-bind:instance="instance"
             v-bind:timeClaimsExpire="timeClaimsExpire"
-            v-bind:isMetamaskNetworkLoginReady="isMetamaskNetworkLoginReady"
             v-bind:hasPayouts="hasPayouts"
-            v-bind:getWinnerPhrase="getWinnerPhrase">
+            v-bind:getWinnerPhrase="getWinnerPhrase"
+            @claimed="getContractState()">
           </BetPhasePayout>
         </div>
           <!--<p class="matchresult announcement">
@@ -274,13 +279,14 @@
         </div>
 
         <!-- SHOULD START FETCH -->
-
         <div v-else-if="isShouldStartFetch">
           <BetPhaseShouldStartFetch
+            v-bind:instance="instance"
             v-bind:matchId="matchId"
             v-bind:account="account"
             v-bind:timeSuggestConfirmEnds="timeSuggestConfirmEnds"
-            v-bind:isMetamaskNetworkLoginReady="isMetamaskNetworkLoginReady">
+            @claimed="getContractState()">
+            >
           </BetPhaseShouldStartFetch>
         </div>
 
@@ -429,7 +435,6 @@ export default {
         this.getNow < this.timeSuggestConfirmEnds
     },
     isShouldStartFetch: function () {
-      console.log("call to isShouldStartFetch")
       return this.isFetchingStarted == false &&
         this.getNow > this.timeMatchEndsEarliest
     },
@@ -480,7 +485,7 @@ export default {
       this.getMatchContext()
       this.getP1()
       this.getP2()
-      this.getContractBetState()
+      this.updateContractBetState()
       this.getMatchFinished()
       this.getTimeBettingOpens()
       this.getTimeBettingCloses()
@@ -491,7 +496,7 @@ export default {
       this.getIsWinnerConfirmed()
       this.getWinner()
     },
-    getContractBetState: async function() {
+    updateContractBetState: async function() {
       this.getMyBetsP1()
       this.getMyBetsP2()
       this.getTotalPlayer1()
@@ -513,73 +518,6 @@ export default {
           this.betTeam = this.p2
         }
         console.log(this.betTeam + " selected.")
-      }
-    },
-    placeBet: async function() {
-      this.success = ''
-      this.warning = ''
-
-      if (this.betTeam != this.p1 && this.betTeam != this.p2) {
-        this.warning = 'Please select your favorite team first.'
-        return
-      }
-
-      let wei
-      let weiBN
-      try {
-        wei = this.web3.utils.toWei(this.betAmount)
-        weiBN = this.web3.utils.toBN(wei)
-      } catch(err) {
-        this.warning = 'Please enter a valid amount of Ether first.'
-        return
-      }
-      if (wei.charAt(0) === '-') {
-        this.warning = 'Negative Ether not allowed.'
-        return
-      }
-      if (weiBN < 1e15) {
-        this.warning = 'Minimum bet is 0.001 Ether.'
-        return
-      }
-
-      console.log(wei)
-
-      this.warning = ''
-      this.showSpinner = true;
-      if (this.betTeam == this.p1) {
-        console.log("lets bet on p1")
-        this.instance.betOnPlayer1({
-          from: this.account,
-          gas: BET_GAS,
-          value: wei
-        })
-        .then(r => {
-          this.getContractBetState()
-          this.showSpinner = false;
-          this.success = 'Bet placed successfully!'
-          // Tx hash: r.tx
-        })
-        .catch(err => {
-          this.showSpinner = false;
-          this.warning = 'Transaction failed or rejected.'
-        })
-      } else if (this.betTeam == this.p2) {
-        console.log("lets bet on p2")
-        this.instance.betOnPlayer2({
-          from: this.account,
-          gas: BET_GAS,
-          value: wei
-        })
-        .then(r => {
-          this.getContractBetState()
-          this.showSpinner = false;
-          this.success = 'Bet placed successfully!'
-          //Tx hash: r.tx
-        })
-        .catch(err => {
-          this.showSpinner = false;
-          this.warning = 'Transaction failed or rejected'
-        })  
       }
     },
     getMatchContext: function () {
@@ -645,7 +583,7 @@ export default {
     },
     getWinner: async function() {
       this.instance.winner.call().then(winner => {
-          this.rawWinner = winner;  
+        this.rawWinner = Number(winner);  
       })
     },
     getIsFetchingStarted: async function() {
@@ -664,13 +602,14 @@ export default {
         this.getContractState()
       })
     })
-  },
-  watch: {
+  }
+  /*watch: {
     account: function (newAccount) {
+      console.log("watcher called")
       this.getMyBetsP1()
       this.getMyBetsP2()
     }
-  }
+  }*/
 }
 </script>
 

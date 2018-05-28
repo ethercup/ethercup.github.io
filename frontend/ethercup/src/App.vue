@@ -114,12 +114,16 @@ export default {
   },
   created () {
     require('dotenv').config();
-    this.$store.commit('initWeb3')
-    this.$store.commit('setTargetNetwork', process.env.NETWORK_ID)
-
+    this.initStore()
     this.updateNetworkAndAccount()
   },
   methods: {
+    initStore() {
+      this.$store.commit('initWeb3')
+      this.$store.commit('setTargetNetwork', process.env.NETWORK_ID)
+      this.$store.commit('setRegistryAddress', process.env.ADDRESS_BET_REGISTRY)
+
+    },
     updateBalance () {
       if(this.web3.utils.isAddress(this.account)) {
         this.getBalance(this.account).then(b => {

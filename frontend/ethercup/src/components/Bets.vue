@@ -14,13 +14,9 @@
     <ul v-if="numBets > 0">
       <Bet
         v-for="n in numBets" :key="n"
-        v-bind:registry="registry"
-        v-bind:contract="contract"
         v-bind:matchId="n-1"
-        v-bind:account="account"
-        v-bind:balance="balance"
+        v-bind:registryInstance="registryInstance"
         v-bind:hideFinishedMatches="hideFinishedMatches"
-        v-bind:isMetamaskNetworkLoginReady="isMetamaskNetworkLoginReady"
       />
     </ul>
     <div v-else class="gray" style="font-style: italic;">
@@ -33,33 +29,34 @@
 
 <script>
 import Bet from './Bet'
+import { mapState } from 'vuex'
 
 export default {
   name: 'Bets',
   components: {
     Bet
   },
-  props: ['account', 'balance', 'isMetamaskNetworkLoginReady'],
+  // import numBets here from vuex
   data () {
     return {
-      numBets: 0,
+      registryInstance: null,
       hideFinishedMatches: false,
-      registry: null,
-      contract: null
     }
+  },
+  computed: {
+    ...mapState({
+      numBets: state => state.bets.num
+    })
   },
   methods: {
-    updateNumBets () {
-      this.getNumBets().then(num => {
-        this.numBets = Number(num)
-      })
-    }
   },
   created () {
-    this.registry = this.getBetRegistryInstance()
-    this.contract = this.getBetContract()
-    console.log("registry" + this.registry + "contract: " + this.contract)
-    this.updateNumBets()
+    this.$store.dispatch('getRegistry').then((instance) => {
+      // workaround since registry instance can't be stored in vuex for some reason (commit-function calls invalid instance function?)
+      this.registryInstance = instance
+      this.$store.dispatch('updateNumBets', instance)
+    })
+    this.$store.commit('initBetContract')
   },
 }
 </script>

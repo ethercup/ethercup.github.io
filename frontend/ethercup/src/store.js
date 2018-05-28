@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import Web3 from 'web3'
+import TruffleContract from 'truffle-contract'
 
 Vue.use(Vuex)
 
@@ -16,7 +17,13 @@ const state = {
   registry: {
     address: '',
     contract: null,
-    instance: null
+    instance: null,
+  },
+  bets: {
+    num: 0,
+    contract: null,
+    instances: [],
+    addresses: []
   }
 }
 
@@ -43,16 +50,50 @@ const mutations = {
   },
   setBalance (state, balance) {
     state.balance = balance
-  }
-
+  },
+  setRegistryAddress (state, address) {
+    state.registry.address = address 
+  },
+  setRegistryContract (state, contract) {
+    state.registry.contract = contract
+  },
+  setRegistryInstance (state, instance) {
+    state.registry.instance = instance
+  },
+  setNumBets (state, num) {
+    state.bets.num = num
+  },
+  initBetContract (state) {
+    let betArtifact = require('../../../backend/build/contracts/Bet.json')
+    state.bets.contract = TruffleContract(betArtifact)
+    state.bets.contract.setProvider(state.provider)
+    state.bets.contract.defaults({
+      gas: process.env.GAS_DEFAULT,
+      gasPrice: process.env.GASPRICE_DEFAULT
+    })
+  },
 }
 
 // actions are functions that cause side effects and can involve
 // asynchronous operations.
 const actions = {
+  getRegistry (context) {
+    let registryArtifact = require('../../../backend/build/contracts/BetRegistry.json')
+    let contract = TruffleContract(registryArtifact)
+    contract.setProvider(context.state.provider)
+    context.commit('setRegistryContract', contract)
+
+    return new Promise((resolve, reject) => {
+      context.state.registry.contract.at(context.state.registry.address).then(instance => {
+        // gives invalid RPC reponse. Does commit function call a function on instance object that latter doesn't accept?
+        //context.commit('setRegistryContract', instance)
+        resolve(instance)
+      })
+    })
+  },
   updateCurrentNetwork (context) {
     context.state.web3.eth.net.getId().then(network => {
-      if (context.state.network != network) {
+      if (context.state.currentNetwork != network) {
         context.commit('setCurrentNetwork', network)  
       }
     })
@@ -74,6 +115,11 @@ const actions = {
           context.state.balance = Number(context.state.web3.utils.fromWei(balance)).toFixed(3)
       })
     }
+  },
+  updateNumBets (context, registry) {
+    registry.nextIndex.call().then(num => {
+      context.commit('setNumBets', Number(num))
+    })
   }
 }
 

@@ -295,7 +295,7 @@
       </div>
     </div>
     <div class="row monospace" style="color: #bbb">
-      {{ bet.addresses[matchId] }}
+      {{ address }}
     </div>
   </li>
 </template>
@@ -304,6 +304,7 @@
 
 
 <script>
+import { mapState, mapGetters } from 'vuex'
 import BetPhasePayout from './phases/BetPhasePayout.vue'
 import BetPhaseOpen from './phases/BetPhaseOpen.vue'
 import BetPhaseShouldStartFetch from './phases/BetPhaseShouldStartFetch.vue'
@@ -317,11 +318,13 @@ export default {
   components: {
     BetPhasePayout, BetPhaseOpen, BetPhaseShouldStartFetch
   },
-  props: ['registry', 'contract', 'matchId', 'account', 'balance', 'hideFinishedMatches', 'isMetamaskNetworkLoginReady'],
+  props: ['matchId', 'registryInstance', 'hideFinishedMatches'],
   data () {
     return {
+      // bet contract
       instance: null,
-      betAddress: null,
+      address: '',
+      // bet state data
       rawStatus: '',
       matchContext: '',
       p1: 'Team 1',
@@ -342,6 +345,7 @@ export default {
       timeClaimsExpire: 1577836800, // high inital value to improve UX
       rawWinner: 0, // 1 == p1, 2 == p2, 3 == draw
 
+      // UI data
       betTeam: '',
       betAmount: '',
       showSpinner: false,
@@ -350,6 +354,14 @@ export default {
     }
   },
   computed: {
+    ...mapState({
+      web3: state => state.web3,
+      contract: state => state.bets.contract,
+      account: state => state.account
+    }),
+    ...mapGetters({
+      isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady'
+    }),
     unit () {
       return 'ETH'
     },
@@ -645,11 +657,12 @@ export default {
     }
   },
   created () {
-    var that = this
-    this.getBetAddress(this.registry, this.matchId).then(a => {
-      this.address = a
-      this.instance = this.getBetInstance(this.contract, this.address)
-      this.getContractState()
+    this.registryInstance.betContracts.call(this.matchId).then(address => {
+      this.address = address
+      this.contract.at(address).then(instance => {
+        this.instance = instance
+        this.getContractState()
+      })
     })
   },
   watch: {

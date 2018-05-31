@@ -1,0 +1,33 @@
+
+
+
+
+- revise unit tests
+
+- check football-data.org v2 release daily. single final match result field promised.
+
+- 0.001 eth maximal verwenden fuer alle oraclize queries
+
+- Investigate VueJS bet loading optimizations. developer browser plugin shows that flag graphics are loaded more or less sequentially --> some synchrous stuff happening that shouldn't happen I guess.
+
+- VueJS: props validation
+
+- VueJS: maybe put bet data in vuex store. Might also load faster as bet data is centrally and independently fetched. components will just render vuex data when it
+becomes available there. Right now: bet components contain bet state.
+	* Leveraging vuex more, will also result in more powerful bet filters (by country, by group, by match start, next X matches, previous X matches,....)
+
+- work with tx.gasUsed to determin if claim/fundFetching/bet(?) worked or instead it moved to cancelled state. In case of cancel, gasUsed should be way less. Adapt feedback messages accordingly: Don't say 'Funding successful', when actually it was moved to cancelled and nothing was funded.
+
+- change prod config back to mainnet (now kovan)
+
+- remove me as a contributor on ethercup github pages. only ethercup account should commit.
+	--> reset repo once more
+
+- find all 'TODOS' in the repo and resolve or merge here
+
+- rework funding: when football-data v2 is out, don't ask for fund of 0.008 ether or >5 fetches, but offer 1 fetch for 0.001 ether or so. Button: Fund 1 fetch!
+	* Contract not initialized with funds!
+	* Users pay for one fund, can start funding anytime after matchStart+1-5min
+	* Source of income? Add a buffer of 50%? 10% (min), 20%?
+
+- fix CSS... often ugly. button colors when clicked often wrong

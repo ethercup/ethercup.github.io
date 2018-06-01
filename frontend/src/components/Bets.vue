@@ -51,7 +51,9 @@ export default {
       this.registryInstance = instance
       this.$store.dispatch('updateNumBets', instance)
     })
-    this.$store.commit('initBetContract')
+    this.$store.dispatch('initBetContract').then(r => {
+      console.log('initBetContract DONE')
+    })
   },
 }
 </script>

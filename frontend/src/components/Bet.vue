@@ -13,14 +13,14 @@
       <div class="five columns">
         <img
           class="flag selectable u-max-full-width"
-          v-bind:src="require(`@/assets/teams/${p1}.png`)"
+          :src="getFlagPathP1"
           v-on:click.stop.prevent="select(p1)"
           v-bind:class="{ notselected : isP2Selected, selected : isP1Selected }">
       </div>
       <div class="two columns">
         <div class="vs">VS</div>
         <div class="match-context">
-          {{ matchContext }}
+          {{ matchContext(matchId) }}
         </div>
         <div class="small">
           Match {{ matchId+1 }}<span class="gray">/64</span>
@@ -29,7 +29,7 @@
       <div class="five columns">
         <img
           class="flag selectable u-max-full-width"
-          v-bind:src="require(`@/assets/teams/${p2}.png`)"
+          :src="getFlagPathP2"
           v-on:click.stop.prevent="select(p2)"
           v-bind:class="{ notselected : isP1Selected, selected : isP2Selected }">
       </div>
@@ -59,7 +59,7 @@
         <div class="row">
           <div class="eight columns offset-by-two">
             <div class="left">
-              Number of bets: {{ numBetsPlayer1+numBetsPlayer2 }}
+              Number of bets: {{ numBetsP1+numBetsP2 }}
             </div>
             <div class="statsbar-right">
               <div class="statsbar-left" v-bind:style="getLeftBarWidthNum"></div>
@@ -262,26 +262,26 @@ export default {
       instance: null,
       address: '',
       // bet state data
-      rawStatus: '',
-      matchContext: '',
-      p1: 'Team 1',
-      p2: 'Team 2',
-      isFetchingStarted: false,
-      fundingNeeded: '0',
-      matchFinished: false,
-      isWinnerSuggested: false,
-      isWinnerConfirmed: false,
-      myBetsP1: '0',
-      myBetsP2: '0',
-      totalPlayer1: '0',
-      totalPlayer2: '0',
-      numBetsPlayer1: 0,
-      numBetsPlayer2: 0,
-      timeBettingOpens: 1577836800,
-      timeBettingCloses: 1577836800,
-      timeSuggestConfirmEnds: 1577836800,
-      timeClaimsExpire: 1577836800, // high inital value to improve UX
-      rawWinner: 0, // 1 == p1, 2 == p2, 3 == draw
+      //rawStatus: '',
+      //matchContext: '',
+      // p1: 'Team 1',
+      // p2: 'Team 2',
+      // isFetchingStarted: false,
+      // fundingNeeded: '0',
+      // matchFinished: false,
+      // isWinnerSuggested: false,
+      // isWinnerConfirmed: false,
+      // myBetsP1: '0',
+      // myBetsP2: '0',
+      // totalPlayer1: '0',
+      // totalPlayer2: '0',
+      // numBetsPlayer1: 0,
+      // numBetsPlayer2: 0,
+      // timeBettingOpens: 1577836800,
+      // timeBettingCloses: 1577836800,
+      // timeSuggestConfirmEnds: 1577836800,
+      // timeClaimsExpire: 1577836800, // high inital value to improve UX
+      // rawWinner: 0, // 1 == p1, 2 == p2, 3 == draw
 
       // UI
       betTeam: '',
@@ -291,11 +291,35 @@ export default {
     ...mapState({
       web3: state => state.web3,
       contract: state => state.bets.contract,
-      account: state => state.account
+      account: state => state.account,
+      //p1: state => state.bets.bets[this.matchId].p1,
     }),
     ...mapGetters({
-      isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady'
+      isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady',
+      matchContext: 'matchContext',
+      p1: 'p1',
+      p2: 'p2',
+      myBetsP1: 'myBetsP1',
+      myBetsP2: 'myBetsP2',
+      totalP1: 'totalP1',
+      totalP2: 'totalP2',
+      numBetsP1: 'numBetsP1',
+      numBetsP2: 'numBetsP2',
+      timeBettingOpens: 'timeBettingOpens',
+      timeBettingCloses: 'timeBettingCloses',
+      timeFetchConfirmEnds: 'timeFetchConfirmEnds',
+      timeClaimsExpire: 'timeClaimsExpire',
+      isFetchingStarted: 'isFetchingStarted',
+      isWinnerFetched: 'isWinnerFetched',
+      isWinnerConfirmed: 'isWinnerConfirmed',
+      fundingNeeded: 'fundingNeeded',
     }),
+    getFlagPathP1 () {
+      return 'img/flags/' + this.p1 + '.png'
+    },
+    getFlagPathP2 () {
+      return 'img/flags/' + this.p2 + '.png'
+    },
     isOwner () {
       return this.account == process.env.ADDRESS_OWNER.toLowerCase()
     },
@@ -306,7 +330,7 @@ export default {
       return (new Date().getTime() / 1000).toFixed(0);
     },
     pot () {
-      return (this.toEther(this.totalPlayer1) + this.toEther(this.totalPlayer2)).toFixed(3)
+      return (this.toEther(this.totalP1) + this.toEther(this.totalP2)).toFixed(3)
     },
     timeMatchStarts: function() {
       return this.timeBettingCloses + 15*60
@@ -331,6 +355,7 @@ export default {
     },
     isInactive () {
       console.log("call to isInactive")
+      console.log(this.getNow + ", " + this.timeBettingOpens)
       return this.getNow < this.timeBettingOpens
     },
     isClaimExpired () {
@@ -398,15 +423,15 @@ export default {
       }
     },
     getLeftBarWidthPool () {
-      if (this.totalPlayer1 != '0' || this.totalPlayer2 != '0') {
-          return "width: " + ((this.toEther(this.totalPlayer1) / (this.toEther(this.totalPlayer1)+this.toEther(this.totalPlayer2))) * 100) + "%;"
+      if (this.totalP1 != '0' || this.totalP2 != '0') {
+          return "width: " + ((this.toEther(this.totalP1) / (this.toEther(this.totalP1)+this.toEther(this.totalP2))) * 100) + "%;"
       } else {
           return "width: 100%; background-color: #bbb;"
       }
     },
     getLeftBarWidthNum () {
-      if (this.numBetsPlayer1 != '0' || this.numBetsPlayer2 != '0') {
-        return "width: " + ((this.numBetsPlayer1 / (this.numBetsPlayer1+this.numBetsPlayer2)) * 100) + "%;"
+      if (this.numBetsP1 != '0' || this.numBetsP2 != '0') {
+        return "width: " + ((this.numBetsP1 / (this.numBetsP1+this.numBetsP2)) * 100) + "%;"
       } else {
         return "width: 100%; background-color: #bbb;"
       }
@@ -430,31 +455,6 @@ export default {
     }
   },
   methods: {
-    getContractState: async function() {
-      this.getStatus()
-      this.getMatchContext()
-      this.getP1()
-      this.getP2()
-      this.updateContractBetState()
-      this.getMatchFinished()
-      this.getTimeBettingOpens()
-      this.getTimeBettingCloses()
-      this.getTimeSuggestConfirmEnds()
-      this.getTimeClaimsExpire()
-      this.getIsFetchingStarted()
-      this.getIsWinnerSuggested()
-      this.getIsWinnerConfirmed()
-      this.getWinner()
-      this.getFundingNeeded()
-    },
-    updateContractBetState: async function() {
-      this.getMyBetsP1()
-      this.getMyBetsP2()
-      this.getTotalPlayer1()
-      this.getTotalPlayer2()
-      this.getNumBetsPlayer1()
-      this.getNumBetsPlayer2()
-    },
     select: async function (player) {
       if(this.isBettingOpen) {
         if (player == this.p1) {
@@ -464,89 +464,16 @@ export default {
         }
         console.log(this.betTeam + " selected.")
       }
-    },
-    getMatchContext: function () {
-      this.instance.matchContext.call().then(mc => {
-        this.matchContext = mc
-      })
-    },
-    getStatus: function () {
-      this.instance.status.call().then(s => {
-        this.rawStatus = s
-      })
-    },
-    getP1: function () {
-      this.instance.p1.call().then(s => {
-        this.p1 = s
-      })
-    },
-    getP2: function () {
-      this.instance.p2.call().then(s => {
-        this.p2 = s
-      })
-    },
-    getMatchFinished: function() {
-      this.instance.matchFinished.call().then(mf => {
-        this.matchFinished = mf
-      })
-    },
-    getMyBetsP1: async function () {
-      this.myBetsP1 = (await this.instance.betsPlayer1.call(this.account)).toString()
-    },
-    getMyBetsP2: async function () {
-      this.myBetsP2 = (await this.instance.betsPlayer2.call(this.account)).toString()
-    },
-    getTotalPlayer1: async function () {
-      this.totalPlayer1 = (await this.instance.totalPlayer1.call()).toString()
-    },
-    getTotalPlayer2: async function () {
-      this.totalPlayer2 = (await this.instance.totalPlayer2.call()).toString()
-    },
-    getNumBetsPlayer1: async function () {
-      this.numBetsPlayer1 = Number(await this.instance.numBetsPlayer1.call())
-    },
-    getNumBetsPlayer2: async function () {
-      this.numBetsPlayer2 = Number(await this.instance.numBetsPlayer2.call())
-    },
-    getTimeBettingOpens: async function () {
-      this.timeBettingOpens = Number(await this.instance.timeBettingOpens.call())
-    },
-    getTimeBettingCloses: async function() {
-      this.timeBettingCloses = Number(await this.instance.timeBettingCloses.call())
-    },
-    getTimeSuggestConfirmEnds: async function() {
-      this.timeSuggestConfirmEnds = Number(await this.instance.timeSuggestConfirmEnds.call())
-    },
-    getTimeClaimsExpire: async function() {
-      this.timeClaimsExpire = Number(await this.instance.timeClaimsExpire.call())
-    },
-    getIsWinnerSuggested: async function() {
-      this.isWinnerSuggested = await this.instance.winnerSuggested.call()
-    },
-    getIsWinnerConfirmed: async function() {
-      this.isWinnerConfirmed = await this.instance.winnerConfirmed.call()
-    },
-    getWinner: async function() {
-      this.rawWinner = Number(await this.instance.winner.call())
-    },
-    getFundingNeeded: async function() {
-      this.instance.fundingNeeded.call().then(result => {
-        this.fundingNeeded = String(result)
-      }).catch(err => {
-        console.warn("getFundingNeeded behaves unexpectedly: " + err)
-      })
-    },
-    getIsFetchingStarted: async function() {
-      this.isFetchingStarted = await this.instance.isFetchingStarted.call()
     }
   },
   created () {
     this.registryInstance.betContracts.call(this.matchId).then(address => {
       this.address = address
-      this.contract.at(address).then(instance => {
-        this.instance = instance
-        this.getContractState()
+      this.$store.commit('setBetAddress', {
+        matchId: this.matchId,
+        address: address
       })
+      this.$store.dispatch('updateContractState', this.matchId)
     })
   },
   watch: {

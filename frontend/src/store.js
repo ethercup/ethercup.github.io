@@ -64,7 +64,7 @@ const mutations = {
     state.bets.num = num
   },
   initBetContract (state) {
-    let betArtifact = require('../../backend/build/contracts/BetDemo.json')
+    let betArtifact = require('../../backend/build/contracts/BetDemo.json') // TODO: remove Demo
     state.bets.contract = TruffleContract(betArtifact)
     state.bets.contract.setProvider(state.provider)
     state.bets.contract.defaults({

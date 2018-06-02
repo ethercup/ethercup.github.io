@@ -28,7 +28,7 @@
     <Times>
       <TimeTimeout>
         Match result must be fetched and confirmed until<br>
-        {{ getReadableDate(timeSuggestConfirmEnds) }}
+        {{ getReadableDate(timeFetchConfirmEnds) }}
       </TimeTimeout>
     </Times>
   </div>
@@ -50,7 +50,7 @@
     components: {
       Announcement, Note, Warning, ActionClaimWinOrDraw, Times, TimeTimeout
     },
-    props: ['instance', 'timeSuggestConfirmEnds'],
+    props: ['instance', 'timeFetchConfirmEnds'],
     computed: {
       ...mapGetters({
         isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady'

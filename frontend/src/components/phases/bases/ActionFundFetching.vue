@@ -56,6 +56,7 @@ export default {
         this.$emit('funded')
         this.success = 'Sending funds succeeded! Thanks for your support!'
         this.isLoading = false
+        console.info("txHash: " + r.tx)
       })
       .catch(err => {
         this.error = 'Funding failed or rejected.'

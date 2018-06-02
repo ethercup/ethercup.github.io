@@ -1,23 +1,22 @@
 Ethercup
 ========
 
-Bet with Ether on your favorite teams of the FIFA worldcup 2018 in Russia.
+Bet Ether on your favorite teams for every match of the FIFA worldcup 2018 in Russia.
 
-If you placed your bet(s) correctly, the collected Ether pool is split among you and other lucky users, who betted on the winning team. If you betted on the wrong team, you lose your Ether. In case of a draw between the two
-teams, you get your Ether back.
+For each match, a smart contract is deployed on the Ethereum blockchain. By calling its functions you can bet on either team competing in a match. After the match is decided, the payout pool is split among the people who guessed correctly.
 
-The design of the deployed Bet smart contracts makes this betting dApp (distributed application) fraud- and tamper-proof! Your bets are safely stored in a smart contract, which will redistribute Ether when the winner is decided. In case something goes wrong (match postponed, external data provider misbehaves), you're always able to get all your Ether back without paying any fee! 
+Other than betting on the wrong team, there's no way of losing Ether. The design of the deployed Bet smart contracts makes this betting dApp (distributed application) fraud- and tamper-proof! Your bets are safely stored in the smart contracts. The Ether pool will be redistributed once the match result is confirmed. In case of bad case scenarios (match is postponed, external data provider misbehaves, etc), you're always able to get all your Ether back without paying any fee! 
 
 How it works
 ------------
 
-For every match (bet), a smart contract is deployed on the Ethereum blockchain. Depending on the current stage of the bet, different interactions with the smart contracts are possible for any users, who installed the Metamask browser plugin. A bet goes through the following phases:
+For every match (bet), a smart contract is deployed on the Ethereum blockchain. Depending on the current stage of the bet, different interactions with the smart contracts are possible for any users, who installed the Metamask browser extension. A bet goes through the following phases:
 
 1. **Inactive**: The bet is deployed on the blockchain but it's too early to place bets.
-2. **Open**: The bet opens 1 week before the match starts. You can bet on either team as often you want with as much Ether as you want.
-3. **Closed/Match playing**: The bet closes 15 min before the match starts. It is too late to place bets now, as the match is starting soon.
-4. **Match finished**: Around 90 min after match start, users can activate the smart contract so it starts fetching the match result from `football-data.org`. If there's no result yet after 90 min, e.g. because the match includes a penalty shootout at the end and it is just too early for a final match result, the smart contract will retry to fetch the final result every 1 hour. Once the final match result is fetched, the result has to be confirmed by the admin.
-5. **Payouts**: Once the winner is fetched and confirmed, there's no go-back. The Ether pool is redistributed and a 1% fee is deducted. Users, who betted on the winning team, can claim their payouts. The bet cannot be cancelled anymore by anyone. But be careful: Your payouts expire after 1 month.
+2. **Open**: The bet opens *1 week* before the match starts. You can bet on either team as often you want with as much Ether as you want. The minimum bet amount is 0.001 Ether, which is about 50cents right now.
+3. **Closed/Match playing**: The bet closes *15 min* before the match starts. It is too late to place bets now, as the match is starting soon.
+4. **Match finished**: When the regular match time is over, users can activate the smart contract to start fetching the match result from `football-data.org`. If there's no result yet, e.g. because the match includes a penalty shootout at the end and thus lasts longer, the smart contract will retry to fetch the result. Once the final match result is fetched, the result has to be confirmed by the admin. The fetching and confirmation of the match outcome has to be completed within *2 days* after match start. If it takes longer, you can claim refunds.
+5. **Payouts**: Once the winner is fetched and confirmed, there's no go-back. The Ether pool is redistributed and a small 1% fee is deducted to (hopefully) cover the deployment costs. Users, who betted on the winning team, can claim their payouts. The bet cannot be cancelled anymore by anyone. But be careful: Your payouts expire after *4 weeks*.
 
 Each phase comes with a timeout. After this timeout, the next phase is entered, or, in case of a missing event in the previous phase (e.g. winner not confirmed), the smart contract switches to the final phase is 'cancelled'. A cancelled bet cannot be re-activated but anyone can get their Ether refunded.
 
@@ -53,19 +52,22 @@ Let's walk through these scenarios:
 Other things to note
 --------------------
 * Smart contracts can't be changed once they are deployed. In case of a postponed match for example, a new smart contract, which reflects a new match start time, will be deployed and replaces the old contract.
-* Smart contracts don't execute code autonomously. This means that fetching of the match result as well as paying out lucky betters, doesn't happen automatically. Instead, you as a user have to call functions of the smart contract to start fetching or to claim payouts.
-* Transactions on the Ethereum blockchain cost small fractions of Ether as fee (called 'gas'). This affects placing bets or claiming payouts, too. The fee amount is displayed by the transaction approval popup from Metamask. This is especially important if you plan to bet a small fraction of an Ether, because the transaction cost might outweight your bet earnings. 
+* Smart contracts don't execute code autonomously. This means that fetching of the match result as well as paying out lucky betters, doesn't happen automatically. Instead, you as a user have to call functions of the smart contract to start fetching or to claim payouts. This is why you read 'claim payouts' and 'claim refunds' throughout this how-to. You have to take action in order to get your Ether.
+* Transactions on the Ethereum blockchain cost small fractions of Ether as transaction fee (called 'gas'). This affects placing bets or claiming payouts, too. The fee amount is displayed by the transaction approval popup of Metamask. This is especially important if you plan to bet a small fraction of an Ether, because the transaction cost might outweight your bet earnings. 
 
 Deployed smart contracts
 ------------------------
 The UI is making the betting experience much better but in case you want want to interact manually with the bet smart contracts, here are the addresses of deployed smart contracts:
 
-**Bet Registry**
+**Demo Bet**:
 
-(contains the addresses of all bet smart contracts): `<coming soon>`
-
+`<coming soon>`
 
 **Bets**:
 
 `<coming soon>`
 
+Future improvements
+-------------------
+* The external API that is fetched doesn't allow an efficient way to fetch the match result right now. Once the v2 of the API is released, there might be huge gas savings and a better UX. I have an implementation in mind to make fetching the match result much more flexible, fast and cheaper.
+* Wanted to add more filters to the UI so you can narrow down the shown bets better. There will be 64 matches so scrolling through them will be a pain. I have to admit that my fronted/VueJS/Vuex skills are very limited, so not sure if this feature will make it in time.

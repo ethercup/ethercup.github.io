@@ -91,6 +91,7 @@ export default {
           this.isLoading = false;
           this.success = 'Bet placed successfully!'
           this.$emit('bet-placed')
+          console.info("txHash: " + r.tx)
         })
         .catch(err => {
           this.isLoading = false;
@@ -106,6 +107,7 @@ export default {
           this.isLoading = false;
           this.success = 'Bet placed successfully!'
           this.$emit('bet-placed')
+          console.info("txHash: " + r.tx)
         })
         .catch(err => {
           this.isLoading = false;

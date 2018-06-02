@@ -53,6 +53,7 @@ export default {
         this.$emit('claimed')
         this.success = 'Refund claimed successfully!'
         this.isLoading = false
+        console.info("txHash: " + r.tx)
       })
       .catch(err => {
         console.log(err)

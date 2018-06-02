@@ -9,7 +9,7 @@
     <Times>
       <TimeTimeout>
         Match result must be confirmed until<br>
-        {{ getReadableDate(timeSuggestConfirmEnds) }}
+        {{ getReadableDate(timeFetchConfirmEnds) }}
       </TimeTimeout>
     </Times>
   </div>
@@ -27,7 +27,7 @@
     components: {
       Announcement, Times, TimeTimeout
     },
-    props: ['timeSuggestConfirmEnds', 'getWinnerPhrase']
+    props: ['timeFetchConfirmEnds', 'getWinnerPhrase']
   }
 
 </script>

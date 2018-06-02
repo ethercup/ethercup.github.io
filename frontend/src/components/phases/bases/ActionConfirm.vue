@@ -19,7 +19,7 @@
     <Success v-if="success != ''">
       {{ success }}
     </Success>
-    <button class="button-primary" v-on:click="confirmWinner()">
+    <button class="button-confirm" v-on:click="confirmWinner()">
       <span v-if="!isLoading">&#10004;</span>
       <img v-if="isLoading" src="../../../assets/spinner.gif" class="spinner" />
     </button>
@@ -73,6 +73,7 @@ export default {
         this.isLoading = false;
         this.success = 'Confirmed!'
         this.$emit('success')
+        console.info("txHash: " + r.tx)
       })
       .catch(err => {
         this.isLoading = false;

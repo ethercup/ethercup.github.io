@@ -5,13 +5,14 @@
     </Announcement>
 
     <Note>
-      If the external data provider made the result public, this should take minutes. If not, retries are scheduled and the waiting time goes up to hours.
+      If the external data provider made the result public, this should take minutes.<br>
+      If not, retries are scheduled and it may take hours.
     </Note>
 
     <Times>
       <TimeTimeout>
         Match result must be fetched and confirmed until<br>
-        {{ getReadableDate(timeSuggestConfirmEnds) }}
+        {{ getReadableDate(timeFetchConfirmEnds) }}
       </TimeTimeout>
     </Times>
   </div>
@@ -30,7 +31,7 @@
     components: {
       Announcement, Note, Times, TimeTimeout
     },
-    props: ['timeSuggestConfirmEnds']
+    props: ['timeFetchConfirmEnds']
   }
 
 </script>

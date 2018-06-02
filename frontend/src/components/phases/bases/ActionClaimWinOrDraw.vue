@@ -70,8 +70,10 @@ export default {
         this.$emit('claimed')
         this.success = this.messages.success[this.caller]
         this.isLoading = false
+        console.info("txHash: " + r.tx)
       })
       .catch(err => {
+        console.log(err)
         this.error = this.messages.error[this.caller]
         this.isLoading = false
       })

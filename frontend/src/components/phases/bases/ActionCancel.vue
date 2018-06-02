@@ -50,6 +50,7 @@ export default {
         this.isLoading = false;
         this.success = 'Cancelled!'
         this.$emit('success')
+        console.info("txHash: " + r.tx)
       })
       .catch(err => {
         this.isLoading = false;

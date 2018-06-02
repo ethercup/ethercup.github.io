@@ -321,7 +321,7 @@ export default {
       return !(this.isInactive || this.isClaimExpired)
     },
     canBeConfirmed () {
-      return !this.isWinnerConfirmed && this.isWinnerSuggested && !this.isCancelled
+      return !this.isWinnerConfirmed && this.isWinnerFetched && !this.isCancelled
     },
     canBeCancelled () {
       return !this.isWinnerConfirmed && !this.isCancelled //&& !this.isClaimExpired // should not be required
@@ -354,14 +354,14 @@ export default {
     isWaitingForConfirm () {
       console.log("call to isWaitingForConfirm")
       return this.matchFinished == true &&
-        this.isWinnerSuggested == true &&
+        this.isWinnerFetched == true &&
         this.isWinnerConfirmed == false &&
         this.getNow < this.timeFetchConfirmEnds
     },
     isTooLateForConfirm () {
       console.log("call to isTooLateForConfirm")
       return this.matchFinished == true &&
-        this.isWinnerSuggested == true &&
+        this.isWinnerFetched == true &&
         this.isWinnerConfirmed == false &&
         this.getNow >= this.timeFetchConfirmEnds
     },
@@ -372,16 +372,16 @@ export default {
     },
     isFundingNeeded () {
       console.log("call to isFundingNeeded")
-      return this.isWinnerSuggested == false && Number(this.fundingNeeded) > 0 && this.getNow < this.timeFetchConfirmEnds
+      return this.isWinnerFetched == false && Number(this.fundingNeeded) > 0 && this.getNow < this.timeFetchConfirmEnds
     },
     isTooLateForSuggest () {
       console.log("call to isTooLateForSuggest")
-      return this.isWinnerSuggested == false &&
+      return this.isWinnerFetched == false &&
         this.getNow >= this.timeFetchConfirmEnds
     },
     isFetching () {
       console.log("call to isFetching")
-      return this.isFetchingStarted == true && this.isWinnerSuggested == false &&
+      return this.isFetchingStarted == true && this.isWinnerFetched == false &&
         this.getNow < this.timeFetchConfirmEnds
     },
     isShouldStartFetch () {

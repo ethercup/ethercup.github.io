@@ -2,11 +2,11 @@
   <li v-if="showBet" class="bet container">
     <div class="row">
       <div class="five columns">
-        <h2>{{ p1 }}</h2>
+        <h2>{{ p1(matchId) }}</h2>
       </div>
       <div class="two columns">&nbsp;</div>
       <div class="five columns">
-        <h2>{{ p2 }}</h2>
+        <h2>{{ p2(matchId) }}</h2>
       </div>
     </div>
     <div class="row relative">
@@ -38,11 +38,11 @@
     <template v-if="showBetStats">
       <div class="row" v-show="isMetamaskNetworkLoginReady">
         <div class="five columns">
-          <i>{{ toEther(myBetsP1) }} {{ unit }}</i>
+          <i>{{ toEther(myBetsP1(matchId)) }} {{ unit }}</i>
         </div>
         <div class="two columns small gray yourbets">Your&nbsp;bets</div>
         <div class="five columns">
-          <i>{{ toEther(myBetsP2) }} {{ unit }}</i>
+          <i>{{ toEther(myBetsP2(matchId)) }} {{ unit }}</i>
         </div>
       </div>
       <div class="stats">
@@ -59,7 +59,7 @@
         <div class="row">
           <div class="eight columns offset-by-two">
             <div class="left">
-              Number of bets: {{ numBetsP1+numBetsP2 }}
+              Number of bets: {{ numBetsP1(matchId)+numBetsP2(matchId) }}
             </div>
             <div class="statsbar-right">
               <div class="statsbar-left" v-bind:style="getLeftBarWidthNum"></div>
@@ -314,11 +314,16 @@ export default {
       isWinnerConfirmed: 'isWinnerConfirmed',
       fundingNeeded: 'fundingNeeded',
     }),
+    // p1 () {
+    //   console.log(this.matchId)
+    //   console.log(this.$store.state.bets.bets[this.matchId])
+    //   return this.$store.state.bets.bets[this.matchId].p1 },
     getFlagPathP1 () {
-      return 'img/flags/' + this.p1 + '.png'
+      console.log(this.$store)
+      return '/static/img/teams/' + this.p1(this.matchId) + '.png'
     },
     getFlagPathP2 () {
-      return 'img/flags/' + this.p2 + '.png'
+      return '/static/img/teams/' + this.p2(this.matchId) + '.png'
     },
     isOwner () {
       return this.account == process.env.ADDRESS_OWNER.toLowerCase()

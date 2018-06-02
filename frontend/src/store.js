@@ -10,6 +10,31 @@ var Bet
 
 Vue.use(Vuex)
 
+var betTemplate = {
+  address: '',
+
+  rawStatus: '',
+  matchContext: '',
+  p1: 'Team 1',
+  p2: 'Team 2',
+  isFetchingStarted: false,
+  fundingNeeded: '0',
+  matchFinished: false,
+  isWinnerSuggested: false,
+  isWinnerConfirmed: false,
+  myBetsP1: '0',
+  myBetsP2: '0',
+  totalP1: '0',
+  totalP2: '0',
+  numBetsP1: 0,
+  numBetsP2: 0,
+  timeBettingOpens: 1577836800,
+  timeBettingCloses: 1577836800,
+  timeSuggestConfirmEnds: 1577836800,
+  timeClaimsExpire: 1577836800, // high inital value to improve UX
+  rawWinner: 0,// 1 == p1, 2 == p2, 3 == draw
+}
+
 // root state object.
 // each Vuex instance is just a single state tree.
 const state = {
@@ -27,7 +52,7 @@ const state = {
     num: 0,
     //contract: require('./assets/contracts/Bet.json'),
     addresses: [],
-    bets: null
+    bets: {}
   }
 }
 
@@ -65,11 +90,21 @@ const mutations = {
     state.registry.instance = instance
   },
   setNumBets (state, num) {
-    state.bets.num = num
-    state.bets.bets = Array(num).fill({})
+    if (num != null) {
+      state.bets.num = num
+      for (var i = 0; i<num; i++) {
+        //console.log(i)
+        //Vue.set(state.bets.bets[i], )
+        var copy = Object.assign({}, betTemplate)
+        Vue.set(state.bets.bets, i, copy)
+        state.bets.addresses[i] = ''
+      }
+      //console.log(state)
+    }
   },
   setBetAddress (state, payload) {
     state.bets.addresses[payload.matchId] = payload.address
+    //console.log(state.bets.addresses)
   },
   setRawStatus (state, payload) {
     state.bets.bets[payload.matchId].rawStatus = payload.data
@@ -78,6 +113,7 @@ const mutations = {
     state.bets.bets[payload.matchId].matchContext = payload.data
   },
   setP1 (state, payload) {
+    //console.log(payload.matchId + ": " + payload.data)
     state.bets.bets[payload.matchId].p1 = payload.data
   },
   setP2 (state, payload) {
@@ -187,6 +223,7 @@ const actions = {
   },
   updateNumBets (context, registry) {
     registry.nextIndex.call().then(num => {
+      //console.log(Number(num))
       context.commit('setNumBets', Number(num))
     })
   },
@@ -202,7 +239,7 @@ const actions = {
     //console.log('2222 ' + Bet.networks[Bet.network_id])
     //console.log('now calling matchContext.call')
     Bet = Bet.at('0xdaa2122d6a3a1e9fe9348c61de1648c0e5e86eee')
-    Bet.matchContext.call().then(r => {console.log(r)}).catch(err => {console.log(err)})
+    //Bet.matchContext.call().then(r => {console.log(r)}).catch(err => {console.log(err)})
   },
   updateContractState: async (context, matchId) => {
     context.dispatch('updateContractBetState', matchId)
@@ -245,11 +282,20 @@ const actions = {
     })
   },
   updateP1: async (context, matchId) => {
-    Bet.address = context.state.bets.addresses[matchId]
-    context.commit('setP1', {
-      matchId: matchId,
-      data: await Bet.p1.call()
+    var a = context.state.bets.addresses[matchId]
+    // console.log(a)
+    Bet.address = a
+    Bet.contract.address = a
+    console.log(Bet.address)
+    Bet.p1.call().then(r => {
+      console.log(r)
+    }).catch(err => {
+      console.log(err)
     })
+    // context.commit('setP1', {
+    //   matchId: matchId,
+    //   data: await Bet.p1.call()
+    // })
   },
   updateP2: async (context, matchId) => {
     Bet.address = context.state.bets.addresses[matchId]
@@ -397,6 +443,7 @@ const getters = {
     return state.bets.bets[matchId].matchContext
   },
   p1: (state) => (matchId) => {
+    //console.log("P1" + state.bets.bets[matchId].p1)
     return state.bets.bets[matchId].p1
   },
   p2: (state) => (matchId) => {

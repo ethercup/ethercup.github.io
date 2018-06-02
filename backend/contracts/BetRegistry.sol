@@ -6,7 +6,7 @@ import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 contract BetRegistry is Ownable {
     using SafeMath for uint;
 
-    uint public constant NUM_MATCHES = 64; // must be smaller than uint8.MAX_VALUE
+    uint public constant NUM_MATCHES = 64;
     uint public nextIndex;
     uint public numReplacedContracts;
 
@@ -16,7 +16,8 @@ contract BetRegistry is Ownable {
     constructor() public {
     }
 
-    function replaceBet(uint _id, address _address) external
+    function replaceBet(uint _id, address _address)
+        external
         onlyOwner
     {
         require(betContracts[_id] != address(0));
@@ -29,7 +30,8 @@ contract BetRegistry is Ownable {
         betContracts[_id] = _address;
     }
 
-    function addBet(address _address) external
+    function addBet(address _address)
+        external
         onlyOwner
     {
         require(nextIndex < NUM_MATCHES);
@@ -38,7 +40,9 @@ contract BetRegistry is Ownable {
         nextIndex = nextIndex.add(1);
     }
 
-    function getReplacedBet(uint _id) external view
+    function getReplacedBet(uint _id)
+        external
+        view
         returns (address) 
     {
         require(_id < numReplacedContracts);
@@ -46,8 +50,10 @@ contract BetRegistry is Ownable {
         return replacedBetContracts[_id];
     }
 
-    /* fallback function */
-    function () public payable {
-      revert(); 
+    function ()
+        public
+        payable
+    {
+        revert(); 
     }
 }

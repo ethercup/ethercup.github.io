@@ -1,5 +1,5 @@
 var BetRegistry = artifacts.require("./BetRegistry.sol")
-var Bet = artifacts.require("./BetDemo.sol")
+var Bet = artifacts.require("./BetDemo.sol") // remove Demo
 
 module.exports = function(deployer, network, accounts) {
 	

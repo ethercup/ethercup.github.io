@@ -4,7 +4,7 @@ import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
 import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 import './oraclizeAPI_0.4.sol';
 
-contract Bet is usingOraclize, Ownable {
+contract BetDev is usingOraclize, Ownable {
   using SafeMath for uint;
 
   enum Status { Cancelled, Active }

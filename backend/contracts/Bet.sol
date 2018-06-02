@@ -38,9 +38,9 @@ contract Bet is usingOraclize, Ownable {
 
   uint private GAS_PRICE = 6e9; // 8GWei. Not constant so that it can be increased by the owner in case of higher demands in the future
   //uint private constant GAS_LIMIT = 300000; // works: 300000
-  uint private constant GAS_LIMIT_MATCHSTATUS = 225000; // works: 300000
-  uint private constant GAS_LIMIT_GOALS = 240000; // works: 300000
-  uint private constant GAS_LIMIT_GOALS_PENALTY = 60000; // works: 300000
+  uint private constant GAS_LIMIT_MATCHSTATUS = 350000; // works: 300000
+  uint private constant GAS_LIMIT_GOALS = 300000; // works: 300000
+  uint private constant GAS_LIMIT_GOALS_PENALTY = 100000; // works: 300000
   uint private constant MAX_GAS = GAS_LIMIT_GOALS;
   
   uint private constant NORMAL_MAX_FETCHES = 5; // == 1x match result, 2x normal goals, 2x penalty shootout goals

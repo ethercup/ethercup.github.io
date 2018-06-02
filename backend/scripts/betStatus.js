@@ -26,11 +26,11 @@ const GASPRICE = 6e9
 const OWNER = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9'.toLowerCase() //acc1
 
 const ADDRESS_REGISTRY = '0x9540465c237EfB0C45a27741a845Ecb1558b878B'.toLowerCase()
-const ADDRESS_BET = '0xCAAA531AE60EDE41F7Dd43a6045e2bB65434da52'.toLowerCase()
+const ADDRESS_BET = '0xe78c408045663967Aa587dcD308A6FB09d855a85'.toLowerCase()
 
 async function main() {
   // Unlock owner account
-  console.log(await web3.eth.personal.unlockAccount(OWNER, 'test'))
+  //console.log(await web3.eth.personal.unlockAccount(OWNER, 'test'))
 
   var jsonBlob = require('../build/contracts/Bet.json')
   var jsonBlobReg = require('../build/contracts/BetRegistry.json')
@@ -55,17 +55,19 @@ async function main() {
   console.log("BetRegistry nextIndex: " + await betRegistry.nextIndex.call())
 
   console.log("\nSTATUS: " + await bet.status.call())  
+  console.log("P1: " + await bet.p1.call())
+  console.log("P2: " + await bet.p2.call())
+  console.log("matchContext: " + await bet.matchContext.call())
 
   console.log("\n---BETs---")
-  console.log("betsPlayer1: " + await bet.betsPlayer1.call(OWNER))
-  console.log("betsPlayer2: " + await bet.betsPlayer2.call(OWNER))
-  console.log("numBetsPlayer1: " + await bet.numBetsPlayer1.call())
-  console.log("numBetsPlayer2: " + await bet.numBetsPlayer2.call())
-  console.log("totalPlayer1: " + await bet.totalPlayer1.call())
-  console.log("totalPlayer2: " + await bet.totalPlayer2.call())
+  console.log("betsPlayer1: " + await bet.betsP1.call(OWNER))
+  console.log("betsPlayer2: " + await bet.betsP2.call(OWNER))
+  console.log("numBetsPlayer1: " + await bet.numBetsP1.call())
+  console.log("numBetsPlayer2: " + await bet.numBetsP2.call())
+  console.log("totalPlayer1: " + await bet.totalP1.call())
+  console.log("totalPlayer2: " + await bet.totalP2.call())
 
   console.log("\n---WINNER FETCH---")
-  console.log("GAS needed for start fetching (first call to claimWinOrDraw: " + await bet.getMinOraclizeGasCost.call())
   console.log("isFetchingStarted: " + await bet.isFetchingStarted.call())
   console.log("queryStatus: " + await bet.queryStatus.call())
   console.log("queryGoalsP1: " + await bet.queryGoalsP1.call())
@@ -82,13 +84,14 @@ async function main() {
   console.log("timeBettingOpens: " + await bet.timeBettingOpens.call())
   console.log("timeBettingCloses: " + await bet.timeBettingCloses.call())
   console.log("timeMatchEnds: " + await bet.timeMatchEnds.call())
-  console.log("timeSuggestConfirmEnds: " + await bet.timeSuggestConfirmEnds.call())
+  console.log("timeSuggestConfirmEnds: " + await bet.timeFetchConfirmEnds.call())
 
   console.log("goalsP1: " + await bet.goalsP1.call())
   console.log("goalsP2: " + await bet.goalsP2.call())
   console.log("goalsP1Fetched: " + await bet.goalsP1Fetched.call())
   console.log("goalsP2Fetched: " + await bet.goalsP2Fetched.call())
   console.log("winner: " + await bet.winner.call())
+  console.log("winnerFetched: " + await bet.winnerFetched.call())
 
   console.log("\n---WINNER CONFIRM---")
   console.log("winnerConfirmed: " + await bet.winnerConfirmed.call())

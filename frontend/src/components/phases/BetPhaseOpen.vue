@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Announcement>
+    <Announcement class="green">
       Place your bets now!
     </Announcement>
 

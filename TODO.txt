@@ -12,6 +12,8 @@
 
 - VueJS: props validation
 
+- Implement in Bet.sol a retry-fetch (exp.?) backoff
+
 - VueJS: maybe put bet data in vuex store. Might also load faster as bet data is centrally and independently fetched. components will just render vuex data when it
 becomes available there. Right now: bet components contain bet state.
 	* Leveraging vuex more, will also result in more powerful bet filters (by country, by group, by match start, next X matches, previous X matches,....)

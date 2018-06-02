@@ -79,8 +79,6 @@ export default {
         return
       }
 
-      console.log(wei)
-
       this.error = ''
       this.isLoading = true;
       if (this.betTeam == this.p1) {

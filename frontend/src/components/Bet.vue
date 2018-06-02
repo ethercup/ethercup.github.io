@@ -59,7 +59,7 @@
         <div class="row">
           <div class="eight columns offset-by-two">
             <div class="left">
-              Number of bets: {{ numBetsPlayer1+numBetsPlayer2 }}
+              Number of bets: {{ numBetsP1+numBetsP2 }}
             </div>
             <div class="statsbar-right">
               <div class="statsbar-left" v-bind:style="getLeftBarWidthNum"></div>
@@ -136,7 +136,7 @@
 
         <div v-else-if="isWaitingForConfirm">
           <BetPhaseWaitForConfirm
-            :timeSuggestConfirmEnds="timeSuggestConfirmEnds"
+            :timeFetchConfirmEnds="timeFetchConfirmEnds"
             :getWinnerPhrase="getWinnerPhrase"/>
         </div>
 
@@ -145,7 +145,7 @@
         <div v-else-if="isTooLateForConfirm">
           <BetPhaseTooLateConfirm
             :instance="instance"
-            :timeSuggestConfirmEnds="timeSuggestConfirmEnds"
+            :timeFetchConfirmEnds="timeFetchConfirmEnds"
             @claimed="getContractState()"/>
         </div>
 
@@ -161,7 +161,7 @@
         <div v-else-if="isFundingNeeded">
           <BetPhaseFundingNeeded
             :instance="instance"
-            :timeSuggestConfirmEnds="timeSuggestConfirmEnds"
+            :timeFetchConfirmEnds="timeFetchConfirmEnds"
             :fundingNeeded="fundingNeeded"
             @funded="getContractState()"/>
         </div>
@@ -172,7 +172,7 @@
         <div v-else-if="isTooLateForSuggest">
           <BetPhaseTooLateSuggest
             :instance="instance"
-            :timeSuggestConfirmEnds="timeSuggestConfirmEnds"
+            :timeFetchConfirmEnds="timeFetchConfirmEnds"
             @claimed="getContractState()"/>
         </div>
 
@@ -180,7 +180,7 @@
 
         <div v-else-if="isFetching">
           <BetPhaseFetching
-            :timeSuggestConfirmEnds="timeSuggestConfirmEnds"/>
+            :timeFetchConfirmEnds="timeFetchConfirmEnds"/>
         </div>
 
         <!-- SHOULD START FETCH -->
@@ -190,7 +190,7 @@
             v-bind:instance="instance"
             v-bind:matchId="matchId"
             v-bind:account="account"
-            v-bind:timeSuggestConfirmEnds="timeSuggestConfirmEnds"
+            v-bind:timeFetchConfirmEnds="timeFetchConfirmEnds"
             @claimed="getContractState()">
             >
           </BetPhaseShouldStartFetch>
@@ -269,17 +269,17 @@ export default {
       isFetchingStarted: false,
       fundingNeeded: '0',
       matchFinished: false,
-      isWinnerSuggested: false,
+      isWinnerFetched: false,
       isWinnerConfirmed: false,
       myBetsP1: '0',
       myBetsP2: '0',
-      totalPlayer1: '0',
-      totalPlayer2: '0',
-      numBetsPlayer1: 0,
-      numBetsPlayer2: 0,
+      totalP1: '0',
+      totalP2: '0',
+      numBetsP1: 0,
+      numBetsP2: 0,
       timeBettingOpens: 1577836800,
       timeBettingCloses: 1577836800,
-      timeSuggestConfirmEnds: 1577836800,
+      timeFetchConfirmEnds: 1577836800,
       timeClaimsExpire: 1577836800, // high inital value to improve UX
       rawWinner: 0, // 1 == p1, 2 == p2, 3 == draw
 
@@ -306,7 +306,7 @@ export default {
       return (new Date().getTime() / 1000).toFixed(0);
     },
     pot () {
-      return (this.toEther(this.totalPlayer1) + this.toEther(this.totalPlayer2)).toFixed(3)
+      return (this.toEther(this.totalP1) + this.toEther(this.totalP2)).toFixed(3)
     },
     timeMatchStarts: function() {
       return this.timeBettingCloses + 15*60
@@ -356,14 +356,14 @@ export default {
       return this.matchFinished == true &&
         this.isWinnerSuggested == true &&
         this.isWinnerConfirmed == false &&
-        this.getNow < this.timeSuggestConfirmEnds
+        this.getNow < this.timeFetchConfirmEnds
     },
     isTooLateForConfirm () {
       console.log("call to isTooLateForConfirm")
       return this.matchFinished == true &&
         this.isWinnerSuggested == true &&
         this.isWinnerConfirmed == false &&
-        this.getNow >= this.timeSuggestConfirmEnds
+        this.getNow >= this.timeFetchConfirmEnds
     },
     isPlayingForSure () {
       console.log("call to isPlayingForSure")
@@ -372,17 +372,17 @@ export default {
     },
     isFundingNeeded () {
       console.log("call to isFundingNeeded")
-      return this.isWinnerSuggested == false && Number(this.fundingNeeded) > 0 && this.getNow < this.timeSuggestConfirmEnds
+      return this.isWinnerSuggested == false && Number(this.fundingNeeded) > 0 && this.getNow < this.timeFetchConfirmEnds
     },
     isTooLateForSuggest () {
       console.log("call to isTooLateForSuggest")
       return this.isWinnerSuggested == false &&
-        this.getNow >= this.timeSuggestConfirmEnds
+        this.getNow >= this.timeFetchConfirmEnds
     },
     isFetching () {
       console.log("call to isFetching")
       return this.isFetchingStarted == true && this.isWinnerSuggested == false &&
-        this.getNow < this.timeSuggestConfirmEnds
+        this.getNow < this.timeFetchConfirmEnds
     },
     isShouldStartFetch () {
       return this.isFetchingStarted == false &&
@@ -398,15 +398,15 @@ export default {
       }
     },
     getLeftBarWidthPool () {
-      if (this.totalPlayer1 != '0' || this.totalPlayer2 != '0') {
-          return "width: " + ((this.toEther(this.totalPlayer1) / (this.toEther(this.totalPlayer1)+this.toEther(this.totalPlayer2))) * 100) + "%;"
+      if (this.totalP1 != '0' || this.totalP2 != '0') {
+          return "width: " + ((this.toEther(this.totalP1) / (this.toEther(this.totalP1)+this.toEther(this.totalP2))) * 100) + "%;"
       } else {
           return "width: 100%; background-color: #bbb;"
       }
     },
     getLeftBarWidthNum () {
-      if (this.numBetsPlayer1 != '0' || this.numBetsPlayer2 != '0') {
-        return "width: " + ((this.numBetsPlayer1 / (this.numBetsPlayer1+this.numBetsPlayer2)) * 100) + "%;"
+      if (this.numBetsP1 != '0' || this.numBetsP2 != '0') {
+        return "width: " + ((this.numBetsP1 / (this.numBetsP1+this.numBetsP2)) * 100) + "%;"
       } else {
         return "width: 100%; background-color: #bbb;"
       }
@@ -439,10 +439,10 @@ export default {
       this.getMatchFinished()
       this.getTimeBettingOpens()
       this.getTimeBettingCloses()
-      this.getTimeSuggestConfirmEnds()
+      this.getTimeFetchConfirmEnds()
       this.getTimeClaimsExpire()
       this.getIsFetchingStarted()
-      this.getIsWinnerSuggested()
+      this.getIsWinnerFetched()
       this.getIsWinnerConfirmed()
       this.getWinner()
       this.getFundingNeeded()
@@ -450,10 +450,10 @@ export default {
     updateContractBetState: async function() {
       this.getMyBetsP1()
       this.getMyBetsP2()
-      this.getTotalPlayer1()
-      this.getTotalPlayer2()
-      this.getNumBetsPlayer1()
-      this.getNumBetsPlayer2()
+      this.getTotalP1()
+      this.getTotalP2()
+      this.getNumBetsP1()
+      this.getNumBetsP2()
     },
     select: async function (player) {
       if(this.isBettingOpen) {
@@ -491,22 +491,22 @@ export default {
       })
     },
     getMyBetsP1: async function () {
-      this.myBetsP1 = (await this.instance.betsPlayer1.call(this.account)).toString()
+      this.myBetsP1 = (await this.instance.betsP1.call(this.account)).toString()
     },
     getMyBetsP2: async function () {
-      this.myBetsP2 = (await this.instance.betsPlayer2.call(this.account)).toString()
+      this.myBetsP2 = (await this.instance.betsP2.call(this.account)).toString()
     },
-    getTotalPlayer1: async function () {
-      this.totalPlayer1 = (await this.instance.totalPlayer1.call()).toString()
+    getTotalP1: async function () {
+      this.totalP1 = (await this.instance.totalP1.call()).toString()
     },
-    getTotalPlayer2: async function () {
-      this.totalPlayer2 = (await this.instance.totalPlayer2.call()).toString()
+    getTotalP2: async function () {
+      this.totalP2 = (await this.instance.totalP2.call()).toString()
     },
-    getNumBetsPlayer1: async function () {
-      this.numBetsPlayer1 = Number(await this.instance.numBetsPlayer1.call())
+    getNumBetsP1: async function () {
+      this.numBetsP1 = Number(await this.instance.numBetsP1.call())
     },
-    getNumBetsPlayer2: async function () {
-      this.numBetsPlayer2 = Number(await this.instance.numBetsPlayer2.call())
+    getNumBetsP2: async function () {
+      this.numBetsP2 = Number(await this.instance.numBetsP2.call())
     },
     getTimeBettingOpens: async function () {
       this.timeBettingOpens = Number(await this.instance.timeBettingOpens.call())
@@ -514,14 +514,14 @@ export default {
     getTimeBettingCloses: async function() {
       this.timeBettingCloses = Number(await this.instance.timeBettingCloses.call())
     },
-    getTimeSuggestConfirmEnds: async function() {
-      this.timeSuggestConfirmEnds = Number(await this.instance.timeSuggestConfirmEnds.call())
+    getTimeFetchConfirmEnds: async function() {
+      this.timeFetchConfirmEnds = Number(await this.instance.timeFetchConfirmEnds.call())
     },
     getTimeClaimsExpire: async function() {
       this.timeClaimsExpire = Number(await this.instance.timeClaimsExpire.call())
     },
-    getIsWinnerSuggested: async function() {
-      this.isWinnerSuggested = await this.instance.winnerSuggested.call()
+    getIsWinnerFetched: async function() {
+      this.isWinnerFetched = await this.instance.winnerFetched.call()
     },
     getIsWinnerConfirmed: async function() {
       this.isWinnerConfirmed = await this.instance.winnerConfirmed.call()

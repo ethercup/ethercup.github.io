@@ -58,6 +58,8 @@ contract Bet is usingOraclize, Ownable {
   bytes32 public queryStatus;
   bytes32 public queryGoalsP1;
   bytes32 public queryGoalsP2;
+  bytes32 public queryComputation;
+  string public computationResponse;
   uint public goalsP1;
   uint public goalsP2;
   bool public goalsP1Fetched = false;
@@ -289,6 +291,17 @@ contract Bet is usingOraclize, Ownable {
       totalPlayer2 = totalPlayer2.add(msg.value);
   }
 
+  function fetch() external payable {
+    uint price = oraclize_getPrice("computation", _gaslimit);
+
+    //oraclize_query(_delay, 'URL', _query, _gaslimit);  
+    queryComputation = oraclize_query("computation",
+        ["json(QmdKK319Veha83h6AYgQqhx9YRsJ9MJE7y33oCXyZ4MqHE).fixture.status",
+        "GET",
+        URL,
+        "{'headers': {'X-Auth-Token': 'fc4c47ededb3485198a3a92a3b546b0e'}}"]
+    );
+  }
 
   /* kovan: 97000 gas, 106694, 106716 */
   // gas used when not first call (second or higher call): 76716
@@ -354,6 +367,8 @@ contract Bet is usingOraclize, Ownable {
           _handleGoalsP1Response(response);
       } else if (myid == queryGoalsP2) {
           _handleGoalsP2Response(response);
+      } else if (myid == queryComputation) {
+          computationResponse = reponse
       }
   }
 

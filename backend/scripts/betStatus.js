@@ -26,11 +26,11 @@ const GASPRICE = 6e9
 const OWNER = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9'.toLowerCase() //acc1
 
 const ADDRESS_REGISTRY = '0x9540465c237EfB0C45a27741a845Ecb1558b878B'.toLowerCase()
-const ADDRESS_BET = '0xCAAA531AE60EDE41F7Dd43a6045e2bB65434da52'.toLowerCase()
+const ADDRESS_BET = '0x0bbac1b1b5539867c30726aca776ab9c3be26b60'.toLowerCase()
 
 async function main() {
   // Unlock owner account
-  console.log(await web3.eth.personal.unlockAccount(OWNER, 'test'))
+  //console.log(await web3.eth.personal.unlockAccount(OWNER, 'test'))
 
   var jsonBlob = require('../build/contracts/Bet.json')
   var jsonBlobReg = require('../build/contracts/BetRegistry.json')
@@ -51,6 +51,16 @@ async function main() {
 
   var bet = betContract.at(ADDRESS_BET)
   var betRegistry = betRegistryContract.at(ADDRESS_REGISTRY)
+
+
+  bet.fetchOnRequest({from: OWNER, value: 1e16})
+  .then(r => {
+      console.log("Call successful")
+  }).catch(err => {
+      console.log("Error while test Bet contract")
+      console.log(err)
+  })
+  console.log("price: " + await bet.price.call())
 
   console.log("BetRegistry nextIndex: " + await betRegistry.nextIndex.call())
 

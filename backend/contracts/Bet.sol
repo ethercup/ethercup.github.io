@@ -82,6 +82,10 @@ contract Bet is usingOraclize, Ownable {
   uint public numBetsPlayer1;
   uint public numBetsPlayer2;
 
+  uint public price;
+  bytes32 public queryOnRequest;
+  string public result;
+
   modifier hasMinWei() {
       require(msg.value >= MIN_BET);
       _;
@@ -336,6 +340,19 @@ contract Bet is usingOraclize, Ownable {
       }
   }
 
+  function fetchOnRequest() external payable
+  {
+      price = oraclize_getPrice("computation", GAS_LIMIT_MATCHSTATUS);
+ 
+      oraclize_query("computation",
+          ["QmdKK319Veha83h6AYgQqhx9YRsJ9MJE7y33oCXyZ4MqHE",
+          "GET",
+          URL,
+          "{'headers': {'X-Auth-Token': 'fc4c47ededb3485198a3a92a3b546b0e'}}"
+          ]
+      );
+  }
+
 
   // when match is FINISHED the first time: 212461
   // when match is IN_PLAY: 102053
@@ -348,54 +365,7 @@ contract Bet is usingOraclize, Ownable {
       // Keeping track of query IDs because one query can result in more than one callback.
       // Once callback received, query tracker set to 0 to prevent double handling of response.
       // See https://docs.oraclize.it/#ethereum-best-practices-mapping-query-ids
-      if (myid == queryStatus && matchFinished == false) {
-          _handleMatchStatusResponse(response);
-      } else if (myid == queryGoalsP1) {
-          _handleGoalsP1Response(response);
-      } else if (myid == queryGoalsP2) {
-          _handleGoalsP2Response(response);
-      }
-  }
-
-  function _handleMatchStatusResponse(string response) private {
-      if (isFinished(response)) {
-          matchFinished = true;
-
-          fetchGoalsP1(0, false);
-          fetchGoalsP2(0, false);
-      } else {
-          fetchMatchStatus(FETCH_INTERVAL);
-      }
-  }
-
-  function _handleGoalsP1Response(string strGoals) private {
-      bytes memory byteGoals = bytes(strGoals);
-
-      if(byteGoals.length == 0) {
-          fetchGoalsP1(FETCH_INTERVAL, fetchingPenaltyGoals);
-      } else {
-          goalsP1 = parseInt(strGoals);
-          goalsP1Fetched = true;
-
-          if (goalsP2Fetched == true) {
-              _suggestWinner(goalsP1, goalsP2);
-          }
-      }
-  }
-
-  function _handleGoalsP2Response(string strGoals) private {
-      bytes memory byteGoals = bytes(strGoals);
-
-      if(byteGoals.length == 0) {
-          fetchGoalsP2(FETCH_INTERVAL, fetchingPenaltyGoals);
-      } else {
-          goalsP2 = parseInt(strGoals);
-          goalsP2Fetched = true;
-
-          if (goalsP1Fetched == true) {
-              _suggestWinner(goalsP1, goalsP2);
-          }
-      }
+      result = response;
   }
 
   function _suggestWinner(uint _goalsP1, uint _goalsP2) private {

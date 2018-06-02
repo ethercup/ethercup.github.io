@@ -10,7 +10,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node scripts/example.js",
     "scrape": "node scripts/scrapeMatches.js",
-    "deploy": "node scripts/deployTestContracts.js",
+    "deployTest": "node scripts/deployTestContracts.js",
+    "deployOne": "node scripts/deployOneBet.js",
+    "testOne": "node scripts/testOneBet.js",
     "status": "node scripts/betStatus.js"
   },
   "author": "",

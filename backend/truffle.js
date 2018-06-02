@@ -6,11 +6,6 @@ const mnemonic = fs.readFileSync('./mnemonic.txt', 'utf8', function (err, data) 
   console.log(data);
 });
 
-const apiKey = fs.readFile('infura.txt', 'utf8', function (err, data) {
-  if (err) throw err;
-  console.log(data);
-});
-
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // to customize your Truffle configuration!

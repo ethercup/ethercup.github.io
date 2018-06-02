@@ -5,12 +5,12 @@ module.exports = function(deployer, network, accounts) {
 	
   const owner = accounts[0]
 
-  var registry
+  // var registry
 
-  BetRegistry.deployed().then(function(instance) {
-    registry = instance;
-  }).then(function(result) {
-    console.log("bet registry instance available.")
+  // BetRegistry.deployed().then(function(instance) {
+  //   registry = instance;
+  // }).then(function(result) {
+  //   console.log("bet registry instance available.")
     
     deployer.deploy(
       Bet,
@@ -21,13 +21,13 @@ module.exports = function(deployer, network, accounts) {
       'Costa Rica',
       true,
       1527436800,
-      3600*24,
-      3600*24,
+      3600*24*20,
+      3600*24*20,
       {from: owner, value: 1e16}
     ).then(bet => {
       console.log("bet deployed. now registering...at: " + registry.address)
       registry.addBet(bet.address, {from: owner});
       console.log('\n Successfully registered Bet (' + bet.address + ') in BetRegistry (' + registry.address + ')')
     })
-  });
+  //});
 };

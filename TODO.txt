@@ -1,7 +1,5 @@
 
 
-
-
 - revise unit tests
 
 - check football-data.org v2 release daily. single final match result field promised.

@@ -39,15 +39,16 @@
   import Helpers from '../../utils/Helpers.js'
   import Announcement from './bases/Announcement.vue'
   import Note from './bases/Note.vue'
+  import Warning from './bases/Warning.vue'
   import ActionClaimWinOrDraw from './bases/ActionClaimWinOrDraw.vue'
   import Times from './bases/Times.vue'
   import TimeTimeout from './bases/TimeTimeout.vue'
 
   export default {
-    name: 'BetPhaseTooLateConfirm',
+    name: 'BetPhaseTooLateSuggest',
     mixins: [Helpers],
     components: {
-      Announcement, Note, ActionClaimWinOrDraw, Times, TimeTimeout
+      Announcement, Note, Warning, ActionClaimWinOrDraw, Times, TimeTimeout
     },
     props: ['instance', 'timeSuggestConfirmEnds'],
     computed: {

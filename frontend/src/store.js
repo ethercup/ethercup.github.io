@@ -10,9 +10,9 @@ Vue.use(Vuex)
 const state = {
   web3: null,
   provider: '',
-  account: '',
+  account: '0',
   balance: 0,
-  currentNetwork: 0,
+  currentNetwork: -1, // -1: loading
   targetNetwork: 0,
   registry: {
     address: '',
@@ -46,7 +46,7 @@ const mutations = {
     state.targetNetwork = network
   },
   setAccount (state, account) {
-    state.account = account
+    state.account = account.toLowerCase() 
   },
   setBalance (state, balance) {
     state.balance = balance
@@ -91,6 +91,13 @@ const actions = {
       })
     })
   },
+  checkWeb3 (context) {
+    if (typeof(window.web3) !== 'undefined') {
+      return
+    } else {
+      context.commit('initWeb')
+    }
+  },
   updateCurrentNetwork (context) {
     context.state.web3.eth.net.getId().then(network => {
       if (context.state.currentNetwork != network) {
@@ -102,13 +109,17 @@ const actions = {
   },
   updateAccount (context) {
     context.state.web3.eth.getAccounts().then(accounts => {
-      if (accounts !== undefined &&
-          accounts.length > 0 &&
-          accounts[0].toLowerCase() != context.state.account)
-      {
-          context.commit('setAccount', accounts[0].toLowerCase())
+      if (accounts !== undefined && accounts.length > 0) {
+        if(context.state.account != accounts[0].toLowerCase()) {
+          context.commit('setAccount', accounts[0])
           context.dispatch('updateBalance')
+        }
+      } else {
+        context.commit('setAccount', '')
       }
+    }).catch(err => {
+      console.warn('Failed to read account')
+      context.commit('setAccount', '')
     })
   },
   updateBalance (context) {
@@ -136,13 +147,17 @@ const getters = {
   isSignedInMetamask: state => {
     return state.account != ''
   },
+  isNetworkLoading: state => {
+    return state.currentNetwork == -1
+  },
   isUsingCorrectNetwork: state => {
     return state.currentNetwork == state.targetNetwork
   },
   isMetamaskNetworkLoginReady: (state, getters) => {
     return getters.hasMetamask &&
       getters.isSignedInMetamask &&
-      getters.isUsingCorrectNetwork
+      getters.isUsingCorrectNetwork &&
+      !getters.isNetworkLoading
   }
 }
 

@@ -16,12 +16,21 @@
       <hr>
     </div>
 
-    <template v-if="(hasMetamask && isUsingCorrectNetwork)">
+    <template v-if="(hasMetamask && isUsingCorrectNetwork && !isNetworkLoading)">
       <div class="container">
         <b>Your Account:</b>
         <p v-if="isSignedInMetamask">
-          Address: <span class="monospace">{{ getShortAddress(this.account) }}</span><br>
-          Balance: <i>{{ this.balance }} ETH</i>
+          Address:
+            <!--<span class="monospace">{{ getShortAddress(this.account) }}</span>-->
+            <template v-if="account != '0'">
+              <span class="monospace">{{ getShortAddress(this.account) }}</span>
+            </template>
+            <template v-else>
+              <i>loading...</i>
+            </template>
+            <br>
+          Balance:
+            <i>{{ this.balance }} ETH</i>
         </p>
         <p v-else class="warning">
           Please sign in Metamask<br>
@@ -46,6 +55,11 @@
         <a href="https://metamask.io" target="_blank">
           <img src="./assets/metamask.png" id="metamask"/>
         </a>
+      </template>
+      <template v-else-if="isNetworkLoading">
+        <p class="big italic">
+          Loading...
+        </p>
       </template>
       <template v-else-if="!isUsingCorrectNetwork">
         <p class="big warning">
@@ -102,6 +116,7 @@ export default {
     }),
     ...mapGetters({
       hasMetamask: 'hasMetamask',
+      isNetworkLoading: 'isNetworkLoading',
       isUsingCorrectNetwork: 'isUsingCorrectNetwork',
       isSignedInMetamask: 'isSignedInMetamask',
       isMetamaskNetworkLoginReady: 'isMetamaskNetworkLoginReady'
@@ -119,38 +134,13 @@ export default {
       this.$store.commit('setRegistryAddress', process.env.ADDRESS_BET_REGISTRY)
 
     },
-    updateBalance () {
-      if(this.web3.utils.isAddress(this.account)) {
-        this.getBalance(this.account).then(b => {
-          this.balance = Number(this.web3.utils.fromWei(b)).toFixed(3)
-        })
-      }
-    },
-    updateAccount() {
-      this.getAccounts().then(accounts => {
-        if (accounts !== undefined && accounts.length > 0 && accounts[0].toLowerCase() != this.account) {
-          this.account = accounts[0].toLowerCase()
-          this.updateBalance()
-        }
-      })
-    },
-    updateNetwork () {
-      this.getNetwork().then(n => {
-        if (this.network != n) {
-          this.network = n
-          if (this.correctNetwork == n && this.account != '') {
-            this.isUsingCorrectNetwork = true
-              this.updateBalance()   
-          }
-        }
-      })
-    },
     updateNetworkAndAccount () {
       var that = this
       this.updateInterval = setInterval(function() {
-        that.$store.dispatch('updateAccount')
+        that.$store.dispatch('checkWeb3')
         that.$store.dispatch('updateCurrentNetwork')
-      }, 200)
+        that.$store.dispatch('updateAccount')
+      }, 500)
     }
   },
   beforeDestroy () {

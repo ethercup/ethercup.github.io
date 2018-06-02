@@ -39,6 +39,7 @@
   import Helpers from '../../utils/Helpers.js'
   import Announcement from './bases/Announcement.vue'
   import Note from './bases/Note.vue'
+  import Warning from './bases/Warning.vue'
   import ActionBet from './bases/ActionBet.vue'
   import Times from './bases/Times.vue'
   import TimeTimeout from './bases/TimeTimeout.vue'
@@ -48,7 +49,7 @@
     name: 'BetPhaseOpen',
     mixins: [Helpers],
     components: {
-      Announcement, Note, ActionBet, Times, TimeTimeout, TimeMatchstart
+      Announcement, Note, Warning, ActionBet, Times, TimeTimeout, TimeMatchstart
     },
     props: ['instance', 'p1', 'p2', 'betTeam', 'timeBettingCloses', 'timeMatchStarts'],
     data () {

@@ -1,7 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.19;
 
-import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
-import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
+import './Ownable.sol';
+import './SafeMath.sol';
 
 contract BetRegistry is Ownable {
     using SafeMath for uint;
@@ -13,7 +13,7 @@ contract BetRegistry is Ownable {
     address[NUM_MATCHES] public betContracts;
     address[] public replacedBetContracts;
     
-    constructor() public {
+    function BetRegistry() public {
     }
 
     function replaceBet(uint _id, address _address) external

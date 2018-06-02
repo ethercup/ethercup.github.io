@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.20;
 
 import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
 import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
@@ -351,6 +351,7 @@ contract Bet is usingOraclize, Ownable {
           "{'headers': {'X-Auth-Token': 'fc4c47ededb3485198a3a92a3b546b0e'}}"
           ]
       );
+      //oraclize_query('URL', URL, GAS_LIMIT_MATCHSTATUS);  
   }
 
 

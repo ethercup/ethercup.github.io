@@ -26,7 +26,7 @@ const GASPRICE = 6e9
 const OWNER = '0x4f3e7B7900e1352a43EA1a6aA8fc7F1FC03EfAc9'.toLowerCase() //acc1
 
 const ADDRESS_REGISTRY = '0x9540465c237EfB0C45a27741a845Ecb1558b878B'.toLowerCase()
-const ADDRESS_BET = '0x0bbac1b1b5539867c30726aca776ab9c3be26b60'.toLowerCase()
+const ADDRESS_BET = '0x3c9293e6a66a0ae0230470c80f24b0d9abebdd62'.toLowerCase()
 
 async function main() {
   // Unlock owner account

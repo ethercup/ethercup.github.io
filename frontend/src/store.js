@@ -142,7 +142,7 @@ const actions = {
 const getters = {
   getWeb3: state => state.web3,
   hasMetamask: state => {
-    return state.web3 !== 'undefined'
+    return state.web3 != null
   },
   isSignedInMetamask: state => {
     return state.account != ''

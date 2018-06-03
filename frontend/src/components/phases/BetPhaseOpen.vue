@@ -19,7 +19,7 @@
     <template v-else>
       <Warning>
         Metamask isn't ready.<br>
-        Please log in Metamask and chose Main Ethereum network.
+        Please log in Metamask and choose Main Ethereum network.
       </Warning>
     </template>
 

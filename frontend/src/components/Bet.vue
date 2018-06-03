@@ -38,11 +38,11 @@
     <template v-if="showBetStats">
       <div class="row" v-show="isMetamaskNetworkLoginReady">
         <div class="five columns">
-          <i>{{ toEther(myBetsP1) }} {{ unit }}</i>
+          <i>{{ toEther(myBetsP1).toFixed(3) }} {{ unit }}</i>
         </div>
         <div class="two columns small gray yourbets">Your&nbsp;bets</div>
         <div class="five columns">
-          <i>{{ toEther(myBetsP2) }} {{ unit }}</i>
+          <i>{{ toEther(myBetsP2).toFixed(3) }} {{ unit }}</i>
         </div>
       </div>
       <div class="stats">

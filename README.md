@@ -61,7 +61,7 @@ The UI is making the betting experience much better but in case you want want to
 
 **Demo Bet**:
 
-`<coming soon>`
+`0x1b9ea1b1825ea9956aec3de92a1cead55ce8b00b`
 
 **Bets**:
 

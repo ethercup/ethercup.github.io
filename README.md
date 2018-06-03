@@ -6,7 +6,7 @@ Bet Ether on your favorite teams for every match of the FIFA worldcup 2018 in Ru
 For each match, a smart contract is deployed on the Ethereum blockchain. By calling its functions you can bet on either team competing in a match. After the match is decided, the payout pool is split among the people who guessed correctly.
 
 
-![Screenshot of open bet](https://github.com/ethercup/ethercup.github.io/tree/master/screenshots/screenshot_bet_open.png)
+![Screenshot of open bet](https://raw.githubusercontent.com/ethercup/ethercup.github.io/master/screenshots/screenshot_bet_open.png)
 
 
 Other than betting on the wrong team, there's no way of losing Ether. The design of the deployed Bet smart contracts makes this betting dApp (distributed application) fraud- and tamper-proof! Your bets are safely stored in the smart contracts. The Ether pool will be redistributed once the match result is confirmed. In case of bad case scenarios (match is postponed, external data provider misbehaves, etc), you're always able to get all your Ether back without paying any fee! 

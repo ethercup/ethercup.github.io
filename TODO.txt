@@ -1,8 +1,9 @@
 
 
-
+- favicon
 
 - revise unit tests
+	* too much work for now. better make demo and make announcement
 
 - check football-data.org v2 release daily. single final match result field promised.
 

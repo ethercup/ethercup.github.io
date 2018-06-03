@@ -20,7 +20,7 @@ module.exports = function(deployer, network, accounts) {
     'Russia',
     'Saudi Arabia',
     true,
-    1527978600,
+    1528383600,
     {from: owner, value: 1e16}
   ).then(bet => {
     console.log("bet deployed. now registering...at: " + registry.address)

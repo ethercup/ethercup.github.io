@@ -1,3 +1,6 @@
+// OUTDATED!
+
+
 var Bet = artifacts.require('Bet');
 
 var getTimestampNow = () => {
@@ -6,8 +9,8 @@ var getTimestampNow = () => {
 
 const gameId = '165069'
 const group = 'A'
-const p1 = 'Germany'
-const p2 = 'Russia'
+const p1 = 'Russia'
+const p2 = 'Saudi Arabia'
 const isGroupPhase = true
 const matchStart = getTimestampNow()+3600*24*8
 const durationBetting = 3600*24*7

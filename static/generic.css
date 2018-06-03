@@ -1,0 +1,67 @@
+.relative {
+  position: relative;
+}
+.monospace {
+  font-family: monospace;
+}
+.gray {
+  color: #bbb;
+}
+.italic {
+  font-style: italic;
+}
+.green {
+  color: rgb(111, 175, 38);
+}
+.red {
+  color: red;
+}
+.orange {
+  color: orange;
+}
+.success {
+  color: rgb(111, 175, 38);
+  font-style: italic;
+}
+.warning {
+  color: red;
+  font-style: italic;
+}
+.small {
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+.big {
+  font-size: 1.8rem;
+  line-height: 3rem;
+  margin: 50px 0px;
+}
+.spinner {
+  float: right;
+  position: absolute;
+  right: 5px;
+  bottom: 1px; /* centers spinner */
+}
+.unit {
+  line-height: 4rem;
+  text-align: left;
+}
+
+
+/*
+.timeout {
+  color: orange;
+}
+button {
+  width: 100%;
+  position: relative;
+}
+*/
+
+/*
+.timeout {
+  color: orange;
+}
+.matchstart {
+  color: rgb(111, 175, 38);
+}*/

@@ -4,7 +4,7 @@ import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
 import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 import './oraclizeAPI_0.4.sol';
 
-contract BetDemo is usingOraclize, Ownable {
+contract BetTemplate is usingOraclize, Ownable {
   using SafeMath for uint;
 
   enum Status { Cancelled, Active }
@@ -12,7 +12,7 @@ contract BetDemo is usingOraclize, Ownable {
 
   uint private constant FEE_PERCENT = 1;
   uint private constant MIN_BET = 1e15;
-  uint private constant DURATION_BETTING = 4 days;
+  uint private constant DURATION_BETTING = 7 days;
   uint private constant DURATION_FETCHCONFIRM = 2 days;
   uint private constant DURATION_PAYOUT = 6 weeks;
 
@@ -38,8 +38,8 @@ contract BetDemo is usingOraclize, Ownable {
 
   uint private GAS_PRICE = 6e9; // 8GWei. Not constant so that it can be increased by the owner in case of higher demands in the future
   //uint private constant GAS_LIMIT = 300000; // works: 300000
-  uint private constant GAS_LIMIT_MATCHSTATUS = 260000; //confirmed// works: 300000
-  uint private GAS_LIMIT_GOALS = 300000; // works: 300000
+  uint private constant GAS_LIMIT_MATCHSTATUS = 350000; // works: 300000
+  uint private constant GAS_LIMIT_GOALS = 300000; // works: 300000
   uint private constant GAS_LIMIT_GOALS_PENALTY = 100000; // works: 300000
   uint private constant MAX_GAS = GAS_LIMIT_GOALS;
   
@@ -79,6 +79,14 @@ contract BetDemo is usingOraclize, Ownable {
   uint public totalP2;
   uint public numBetsP1;
   uint public numBetsP2;
+
+  bool public isInitialized;
+
+  modifier onlyInitOnce() {
+    require(isInitialized == false);
+    isInitialized = true;
+    _;
+  }
 
   modifier hasMinWei() {
       require(msg.value >= MIN_BET);
@@ -225,7 +233,14 @@ contract BetDemo is usingOraclize, Ownable {
       return keccak256(s) == hashFinished;
   }
 
-  constructor(
+  constructor()
+      public
+  {
+      oraclize_setCustomGasPrice(GAS_PRICE);
+      hashFinished = keccak256('FINISHED');
+  }
+
+  function initBet(
       uint _matchId,
       string _apiMatchId,
       string _matchContext,
@@ -235,10 +250,9 @@ contract BetDemo is usingOraclize, Ownable {
       uint _matchStart)
       public
       payable
+      //onlyOwner
+      onlyInitOnce
   {
-      oraclize_setCustomGasPrice(GAS_PRICE);
-      hashFinished = keccak256('FINISHED');
-      
       fetchFund = msg.value;
       matchId = _matchId;
       apiMatchId = _apiMatchId;
@@ -247,12 +261,12 @@ contract BetDemo is usingOraclize, Ownable {
       p2 = _p2;
       isGroupPhase = _isGroupPhase;
       
-      URL = 'https://raw.githubusercontent.com/ethercup/ethercup.github.io/master/backend/api/live.txt';
+      URL = strConcat('http://api.football-data.org/v1/fixtures/', apiMatchId);
       _setTimes(_matchStart);
   }
 
   function _setTimes(uint _matchStart)
-      public
+      private
   {
       // Miners can cheat on block timestamp with a tolerance of 900 seconds.
       // That's why betting is closed 900 seconds before match start.
@@ -276,7 +290,7 @@ contract BetDemo is usingOraclize, Ownable {
       totalP1 = totalP1.add(msg.value);
   }
 
-  function betOnPlayer2()
+  function betOnPlayer22()
       external
       payable
       isNotCancelled

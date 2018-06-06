@@ -26,10 +26,13 @@ function fixTruffleContractCompatibilityIssue(contract) {
 
 var jsonBlob = require('../build/contracts/Bet.json')
 var jsonBlobReg = require('../build/contracts/BetRegistry.json')
+var jsonBlobLib = require('../build/contracts/oraclizeLib.json')
 var betContract = TruffleContract(jsonBlob)
 var betRegistryContract = TruffleContract(jsonBlobReg)
+var oraclizeLib = TruffleContract(jsonBlobLib)
 betContract.setProvider(provider)
 betRegistryContract.setProvider(provider)
+oraclizeLib.setProvider(provider)
 betContract.defaults({
     gasPrice: 6e9,
     from: owner
@@ -40,6 +43,7 @@ betRegistryContract.defaults({
 })
 fixTruffleContractCompatibilityIssue(betContract) // workaround. see https://github.com/trufflesuite/truffle-contract/issues/57
 fixTruffleContractCompatibilityIssue(betRegistryContract)
+fixTruffleContractCompatibilityIssue(oraclizeLib)
 
 const INITIAL_FUND = 1e16 // in wei
 const NOW = Number((new Date().getTime() / 1000).toFixed(0))
@@ -83,7 +87,14 @@ deployContracts = async (registryAddress) => {
         registry = await betRegistryContract.at(registryAddress)
         console.log(' > Using Registry at: ' + registry.address)    
     }
+
+    // deploy OraclizeLib
+    var lib = await oraclizeLib.new.apply(oraclizeLib)
+    console("OraclizeLib deployed!")
+    console.log(lib)
     
+    betContract.('oraclizeLib', lib.address)
+    console.log("lib linked!!")
     // deploy bets and register them
     for (match of MATCHES) {
         console.log('...Deploying bet ' + match[0] + ' ...')
@@ -92,4 +103,4 @@ deployContracts = async (registryAddress) => {
     }
 }
 
-deployContracts('0x975fe8a6e10817619a97C6c5C64153ccb5bcdD02').catch(err => console.log(err))
+deployContracts().catch(err => console.log(err))

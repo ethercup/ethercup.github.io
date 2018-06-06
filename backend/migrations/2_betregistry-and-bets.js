@@ -1,16 +1,21 @@
 var BetRegistry = artifacts.require("./BetRegistry.sol")
-var Bet = artifacts.require("./BetDemo.sol") // remove Demo
+var Bet = artifacts.require("./Bet.sol")
+var OraclizeLib = artifacts.require("./oraclizeLib.sol")
 
 module.exports = function(deployer, network, accounts) {
 	
   const owner = accounts[0]
 
-  var registry
+  let registry
   deployer.deploy(BetRegistry, {from: owner}).then(instance => {
     registry = instance
+    console.log('registry created.')
   }).catch(err => {
     console.log('Something went wrong while deploying the registry: ' + err)
   })
+
+  deployer.deploy(OraclizeLib)
+  deployer.link(OraclizeLib, Bet)
 
   deployer.deploy(
     Bet,
@@ -20,13 +25,12 @@ module.exports = function(deployer, network, accounts) {
     'Russia',
     'Saudi Arabia',
     true,
-    1528383600,
+    1528225200,
     {from: owner, value: 1e16}
   ).then(bet => {
-    console.log("bet deployed. now registering...at: " + registry.address)
-    registry.addBet(bet.address, {from: owner});
-    console.log('\n Successfully registered Bet (' + bet.address + ') in BetRegistry (' + registry.address + ')')
+    console.log(bet)
   }).catch(err => {
     console.log('Something went wrong: ' + err)
   })
+  
 };

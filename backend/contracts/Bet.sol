@@ -1,10 +1,10 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.19;
 
-import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
-import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
-import './oraclizeAPI_0.4.sol';
+import './Ownable.sol';
+import './SafeMath.sol';
+import './oraclizeLib.sol';
 
-contract Bet is usingOraclize, Ownable {
+contract Bet is Ownable {
   using SafeMath for uint;
 
   enum Status { Cancelled, Active }
@@ -89,7 +89,7 @@ contract Bet is usingOraclize, Ownable {
     Time-based modifiers
   */
   modifier isBettingPhase() {
-      require(now >= timeBettingOpens && now < timeBettingCloses, 'It is too early or too late to bet.');
+      require(now >= timeBettingOpens && now < timeBettingCloses);
       _;
   }
 
@@ -122,7 +122,7 @@ contract Bet is usingOraclize, Ownable {
   }
 
   modifier canBeCancelled() {
-      require(winnerConfirmed == false, 'Cannot be cancelled because winner is already confirmed');
+      require(winnerConfirmed == false);
       _;
   }
 
@@ -167,7 +167,7 @@ contract Bet is usingOraclize, Ownable {
     Other modifiers
   */
   modifier onlyOraclize() {
-      require(msg.sender == oraclize_cbAddress());
+      require(msg.sender == oraclizeLib.oraclize_cbAddress());
       _;
   }
 
@@ -195,7 +195,7 @@ contract Bet is usingOraclize, Ownable {
   }
 
   modifier enoughFetchFund() {
-      require(msg.value >= (NORMAL_MAX_FETCHES * oraclize_getPrice("URL", MAX_GAS)));
+      require(msg.value >= (NORMAL_MAX_FETCHES * oraclizeLib.oraclize_getPrice("URL", MAX_GAS)));
       _;
   }
 
@@ -225,7 +225,7 @@ contract Bet is usingOraclize, Ownable {
       return keccak256(s) == hashFinished;
   }
 
-  constructor(
+  function Bet(
       uint _matchId,
       string _apiMatchId,
       string _matchContext,
@@ -236,7 +236,7 @@ contract Bet is usingOraclize, Ownable {
       public
       payable
   {
-      oraclize_setCustomGasPrice(GAS_PRICE);
+      oraclizeLib.oraclize_setCustomGasPrice(GAS_PRICE);
       hashFinished = keccak256('FINISHED');
       
       fetchFund = msg.value;
@@ -247,7 +247,7 @@ contract Bet is usingOraclize, Ownable {
       p2 = _p2;
       isGroupPhase = _isGroupPhase;
       
-      URL = strConcat('http://api.football-data.org/v1/fixtures/', apiMatchId);
+      URL = oraclizeLib.strConcat('http://api.football-data.org/v1/fixtures/', apiMatchId);
       _setTimes(_matchStart);
   }
 
@@ -291,7 +291,7 @@ contract Bet is usingOraclize, Ownable {
   function fetchMatchStatus(uint _delay)
       private
   {
-      string memory query = strConcat('json(', URL, ').fixture.status');
+      string memory query = oraclizeLib.strConcat('json(', URL, ').fixture.status');
       queryStatus = fetch(query, _delay, GAS_LIMIT_MATCHSTATUS);
   }
 
@@ -301,10 +301,10 @@ contract Bet is usingOraclize, Ownable {
       string memory query;
 
       if (_isPenalty == true) {
-        query = strConcat('json(', URL, ').fixture.result.penaltyShootout.goalsHomeTeam');
+        query = oraclizeLib.strConcat('json(', URL, ').fixture.result.penaltyShootout.goalsHomeTeam');
         queryGoalsP1 = fetch(query, _delay, GAS_LIMIT_GOALS_PENALTY);
       } else {
-        query = strConcat('json(', URL, ').fixture.result.goalsHomeTeam');
+        query = oraclizeLib.strConcat('json(', URL, ').fixture.result.goalsHomeTeam');
         queryGoalsP1 = fetch(query, _delay, GAS_LIMIT_GOALS);
       }
   }
@@ -315,10 +315,10 @@ contract Bet is usingOraclize, Ownable {
       string memory query;
 
       if (_isPenalty == true) {
-        query = strConcat('json(', URL, ').fixture.result.penaltyShootout.goalsAwayTeam');
+        query = oraclizeLib.strConcat('json(', URL, ').fixture.result.penaltyShootout.goalsAwayTeam');
         queryGoalsP2 = fetch(query, _delay, GAS_LIMIT_GOALS_PENALTY);
       } else {
-        query = strConcat('json(', URL, ').fixture.result.goalsAwayTeam');
+        query = oraclizeLib.strConcat('json(', URL, ').fixture.result.goalsAwayTeam');
         queryGoalsP2 = fetch(query, _delay, GAS_LIMIT_GOALS);
       }
   }
@@ -327,13 +327,13 @@ contract Bet is usingOraclize, Ownable {
       private
       returns (bytes32)
   {
-      uint fetchCost = oraclize_getPrice("URL", _gaslimit);
+      uint fetchCost = oraclizeLib.oraclize_getPrice("URL", _gaslimit);
       if (fetchFund >= fetchCost && fetchAttempt < MAX_FETCH_ATTEMPTS) {
           fetchAttempt = fetchAttempt.add(1);
           fetchFund = fetchFund.sub(fetchCost);
-          return oraclize_query(_delay, 'URL', _query, _gaslimit);  
+          return oraclizeLib.oraclize_query(_delay, 'URL', _query, _gaslimit);  
       } else {
-          emit FetchingFailed(fetchFund, fetchAttempt, MAX_FETCH_ATTEMPTS);
+          FetchingFailed(fetchFund, fetchAttempt, MAX_FETCH_ATTEMPTS);
           return 0x0;
       }
   }
@@ -376,7 +376,7 @@ contract Bet is usingOraclize, Ownable {
       if(byteGoals.length == 0) {
           fetchGoalsP1(FETCH_INTERVAL, fetchingPenaltyGoals);
       } else {
-          goalsP1 = parseInt(strGoals);
+          goalsP1 = oraclizeLib.parseInt(strGoals);
           goalsP1Fetched = true;
 
           if (goalsP2Fetched == true) {
@@ -393,7 +393,7 @@ contract Bet is usingOraclize, Ownable {
       if(byteGoals.length == 0) {
           fetchGoalsP2(FETCH_INTERVAL, fetchingPenaltyGoals);
       } else {
-          goalsP2 = parseInt(strGoals);
+          goalsP2 = oraclizeLib.parseInt(strGoals);
           goalsP2Fetched = true;
 
           if (goalsP1Fetched == true) {
@@ -408,17 +408,17 @@ contract Bet is usingOraclize, Ownable {
       if (_goalsP1 > _goalsP2) {
           winner = Winner.P1;
           winnerFetched = true;
-          emit WinnerFetched(winner);
+          WinnerFetched(winner);
       } else if (_goalsP1 < _goalsP2) {
           winner = Winner.P2;
           winnerFetched = true;
-          emit WinnerFetched(winner);
+          WinnerFetched(winner);
       } else {
           // If we reach here, both teams have same amount of goals
           if (isGroupPhase == true) {
               winner = Winner.Draw;
               winnerFetched = true;
-              emit WinnerFetched(winner);
+              WinnerFetched(winner);
           } else {
               // If this is reached match is knockout-match, meaning no draw is possible
               // --> Fetch penalty shootout goals
@@ -458,7 +458,7 @@ contract Bet is usingOraclize, Ownable {
               payoutPool = 0;
           }
 
-          emit WinnerConfirmed(winner);
+          WinnerConfirmed(winner);
       } else {
           cancelInternal();
       }
@@ -480,7 +480,7 @@ contract Bet is usingOraclize, Ownable {
       payoutPool = totalP1.add(totalP2);
       remainingPayoutPool = payoutPool;
 
-      emit BettingCancelled(p1, p2);
+      BettingCancelled(p1, p2);
   }
 
   function updateStatus()
@@ -572,7 +572,7 @@ contract Bet is usingOraclize, Ownable {
       view 
       returns (uint)
   {
-      uint costPerFetch = oraclize_getPrice("URL", MAX_GAS).mul(11).div(10);
+      uint costPerFetch = oraclizeLib.oraclize_getPrice("URL", MAX_GAS).mul(11).div(10);
       require(fetchFund < costPerFetch);
 
       return NORMAL_MAX_FETCHES * costPerFetch;

@@ -225,7 +225,7 @@ contract Bet is Ownable {
       return keccak256(s) == hashFinished;
   }
 
-  function Bet(
+  function initBet(
       uint _matchId,
       string _apiMatchId,
       string _matchContext,
@@ -235,10 +235,12 @@ contract Bet is Ownable {
       uint _matchStart)
       public
       payable
+      onlyOwner
+      //onlyInitOnce
   {
       oraclizeLib.oraclize_setCustomGasPrice(GAS_PRICE);
       hashFinished = keccak256('FINISHED');
-      
+
       fetchFund = msg.value;
       matchId = _matchId;
       apiMatchId = _apiMatchId;
@@ -247,12 +249,12 @@ contract Bet is Ownable {
       p2 = _p2;
       isGroupPhase = _isGroupPhase;
       
-      URL = oraclizeLib.strConcat('http://api.football-data.org/v1/fixtures/', apiMatchId);
+      URL = oraclizeLib.strConcat('http://api.football-data.org/v1/fixtures/', _apiMatchId);
       _setTimes(_matchStart);
   }
 
   function _setTimes(uint _matchStart)
-      public
+      private
   {
       // Miners can cheat on block timestamp with a tolerance of 900 seconds.
       // That's why betting is closed 900 seconds before match start.

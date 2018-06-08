@@ -1,6 +1,6 @@
 pragma solidity 0.4.19;
 
-contract BetFactory {
+contract Factory {
     event ForwarderDeployed(address forwarderAddress, address targetContract);
 
     // from: https://gist.github.com/izqui/7f904443e6d19c1ab52ec7f5ad46b3a8
@@ -23,11 +23,11 @@ contract BetFactory {
     }
 
     // from: https://gist.github.com/GNSPS/ba7b88565c947cfd781d44cf469c2ddb
-    function createBet2(address _target, bytes _data)
+    function createProxy(address _target, bytes _data)
         public
         returns (address proxyContract)
     {
-        proxyContract = createProxyImpl(_target, "");
+        proxyContract = createProxyImpl(_target, _data);
         ForwarderDeployed(proxyContract, _target);
 
     }
